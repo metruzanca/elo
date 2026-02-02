@@ -12,30 +12,20 @@ export default function App() {
       root={(props) => {
         const location = useLocation();
 
+        // Only fetch data when not on login page - check synchronously
+        const shouldFetch = () => location.pathname !== "/login";
+
         const user = createAsync(
-          async () => {
-            if (location.pathname === "/login") return null;
-            return getUser();
-          },
+          () => (shouldFetch() ? getUser() : null),
           { deferStream: true }
         );
         const groups = createAsync(
-          async () => {
-            if (location.pathname === "/login") return [];
-            return getUserGroups();
-          },
-          {
-            deferStream: true,
-          }
+          () => (shouldFetch() ? getUserGroups() : []),
+          { deferStream: true }
         );
         const activeLobby = createAsync(
-          async () => {
-            if (location.pathname === "/login") return null;
-            return getUserActiveLobby();
-          },
-          {
-            deferStream: true,
-          }
+          () => (shouldFetch() ? getUserActiveLobby() : null),
+          { deferStream: true }
         );
 
         return (
