@@ -9,7 +9,10 @@ import {
   createEffect,
 } from "solid-js";
 import { endMatch as endMatchServer } from "~/api/matches";
-import { animate, spring } from "motionone";
+// Simple spring-like easing function
+function springEase(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
 
 export const route = {
   preload({ params }) {
@@ -99,14 +102,32 @@ export default function MatchPage() {
     Object.entries(animations).forEach(([userId, anim]) => {
       const el = document.getElementById(`elo-${userId}`);
       if (el) {
-        animate(
-          el,
-          { innerText: [anim.from, anim.to] },
-          {
-            duration: 1,
-            easing: spring({ stiffness: 100, damping: 15 }),
+        // Animate a numeric value and update text content using easing
+        const startValue = anim.from;
+        const endValue = anim.to;
+        const duration = 1000; // 1 second in milliseconds
+
+        let startTime: number | null = null;
+        const animateFrame = (currentTime: number) => {
+          if (startTime === null) {
+            startTime = currentTime;
           }
-        );
+
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const easedProgress = springEase(progress);
+          const currentValue = Math.round(
+            startValue + (endValue - startValue) * easedProgress
+          );
+
+          el.textContent = String(currentValue);
+
+          if (progress < 1) {
+            requestAnimationFrame(animateFrame);
+          }
+        };
+
+        requestAnimationFrame(animateFrame);
       }
     });
   });
