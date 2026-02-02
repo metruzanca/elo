@@ -1,5 +1,5 @@
 import { eq, and, isNotNull, isNull, desc } from "drizzle-orm";
-import { db } from "../drizzle/db";
+import { db } from "../../drizzle/db";
 import {
   Users,
   Groups,
@@ -9,13 +9,13 @@ import {
   Matches,
   MatchParticipants,
   EloScores,
-} from "../drizzle/schema";
+} from "../../drizzle/schema";
 import { randomBytes } from "crypto";
 import {
   balanceTeams,
   selectPlayersForMatch,
   type Player,
-} from "../src/lib/elo";
+} from "../../src/lib/elo";
 
 /**
  * Create a test user directly in the database
