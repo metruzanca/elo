@@ -16,15 +16,15 @@ export default function App() {
         const shouldFetch = () => location.pathname !== "/login";
 
         const user = createAsync(
-          () => (shouldFetch() ? getUser() : null),
+          () => (shouldFetch() ? getUser() : Promise.resolve(null)),
           { deferStream: true }
         );
         const groups = createAsync(
-          () => (shouldFetch() ? getUserGroups() : []),
+          () => (shouldFetch() ? getUserGroups() : Promise.resolve([])),
           { deferStream: true }
         );
         const activeLobby = createAsync(
-          () => (shouldFetch() ? getUserActiveLobby() : null),
+          () => (shouldFetch() ? getUserActiveLobby() : Promise.resolve(null)),
           { deferStream: true }
         );
 
