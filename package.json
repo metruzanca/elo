@@ -6,6 +6,7 @@
     "dev:db": "drizzle-kit push && vinxi dev",
     "build": "vinxi build",
     "start": "vinxi start",
+    "prestart": "bun run drizzle/migrate.ts",
     "cli": "bun run cli/index.ts"
   },
   "devDependencies": {
