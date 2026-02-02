@@ -12,17 +12,15 @@ export function registerMatchCommands(parent: Command): Command {
 
   matchCmd
     .command("start")
-    .description("Start a match in a play session")
-    .argument("<playSessionId>", "ID of the play session")
+    .description("Start a match in a lobby")
+    .argument("<lobbyId>", "ID of the lobby")
     .argument("<matchSize>", "Number of players (must be even)")
-    .action(async (playSessionIdStr: string, matchSizeStr: string) => {
-      const playSessionId = Number(playSessionIdStr);
+    .action(async (lobbyIdStr: string, matchSizeStr: string) => {
+      const lobbyId = Number(lobbyIdStr);
       const matchSize = Number(matchSizeStr);
 
-      if (isNaN(playSessionId) || isNaN(matchSize)) {
-        console.error(
-          "Error: playSessionId and matchSize must be valid numbers"
-        );
+      if (isNaN(lobbyId) || isNaN(matchSize)) {
+        console.error("Error: lobbyId and matchSize must be valid numbers");
         process.exit(1);
       }
 
@@ -32,7 +30,7 @@ export function registerMatchCommands(parent: Command): Command {
       }
 
       try {
-        const result = await startMatchAsHost(playSessionId, matchSize);
+        const result = await startMatchAsHost(lobbyId, matchSize);
         console.log(
           JSON.stringify(
             {

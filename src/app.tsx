@@ -1,117 +1,132 @@
 // @refresh reload
-import { Router } from "@solidjs/router";
+import { Router, useLocation } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
 import { Suspense, Show } from "solid-js";
 import { createAsync } from "@solidjs/router";
-import {
-  getUser,
-  getUserGroups,
-  getUserActivePlaySession,
-  logout,
-} from "~/api";
+import { getUser, getUserGroups, getUserActiveLobby, logout } from "~/api";
 import "./app.css";
 
 export default function App() {
   return (
     <Router
       root={(props) => {
-        const user = createAsync(async () => getUser(), { deferStream: true });
-        const groups = createAsync(async () => getUserGroups(), {
-          deferStream: true,
-        });
-        const activeSession = createAsync(
-          async () => getUserActivePlaySession(),
+        const location = useLocation();
+
+        const user = createAsync(
+          async () => {
+            if (location.pathname === "/login") return null;
+            return getUser();
+          },
           { deferStream: true }
+        );
+        const groups = createAsync(
+          async () => {
+            if (location.pathname === "/login") return [];
+            return getUserGroups();
+          },
+          {
+            deferStream: true,
+          }
+        );
+        const activeLobby = createAsync(
+          async () => {
+            if (location.pathname === "/login") return null;
+            return getUserActiveLobby();
+          },
+          {
+            deferStream: true,
+          }
         );
 
         return (
           <>
-            <div class="navbar bg-base-200">
-              <div class="navbar-start">
-                <a href="/" class="btn btn-ghost">
-                  <img src="/favicon.svg" alt="Home" class="h-6 w-6" />
-                </a>
-                <Suspense
-                  fallback={
-                    <a href="/" class="btn btn-ghost text-xl">
-                      Groups
-                    </a>
-                  }
-                >
-                  <Show
-                    when={groups() && groups()!.length === 1}
+            <Show when={location.pathname !== "/login"}>
+              <div class="navbar bg-base-200">
+                <div class="navbar-start">
+                  <a href="/" class="btn btn-ghost">
+                    <img src="/favicon.svg" alt="Home" class="h-6 w-6" />
+                  </a>
+                  <Suspense
                     fallback={
                       <a href="/" class="btn btn-ghost text-xl">
                         Groups
                       </a>
                     }
                   >
-                    <a
-                      href={`/groups/${groups()![0].id}`}
-                      class="btn btn-ghost text-xl"
+                    <Show
+                      when={groups() && groups()!.length === 1}
+                      fallback={
+                        <a href="/" class="btn btn-ghost text-xl">
+                          Groups
+                        </a>
+                      }
                     >
-                      {groups()![0].name || `Group ${groups()![0].id}`}
-                    </a>
-                  </Show>
-                </Suspense>
-                <Suspense>
-                  {() => {
-                    const session = activeSession();
-                    return session ? (
                       <a
-                        href={`/play-sessions/${session.id}`}
-                        class="btn btn-ghost"
+                        href={`/groups/${groups()![0].id}`}
+                        class="btn btn-ghost text-xl"
                       >
-                        Active Session
+                        {groups()![0].name || `Group ${groups()![0].id}`}
                       </a>
-                    ) : null;
-                  }}
-                </Suspense>
-              </div>
-              <div class="navbar-end">
-                <Suspense
-                  fallback={
-                    <div class="btn btn-ghost btn-circle avatar">
-                      <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
-                        <span class="text-lg font-bold">U</span>
+                    </Show>
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <Show when={activeLobby()}>
+                      {(lobby) => (
+                        <a
+                          href={`/lobbies/${lobby().id}`}
+                          class="btn btn-ghost"
+                        >
+                          Active Lobby
+                        </a>
+                      )}
+                    </Show>
+                  </Suspense>
+                </div>
+                <div class="navbar-end">
+                  <Suspense
+                    fallback={
+                      <div class="btn btn-ghost btn-circle avatar">
+                        <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                          <span class="text-lg font-bold">U</span>
+                        </div>
                       </div>
-                    </div>
-                  }
-                >
-                  <div class="dropdown dropdown-end">
-                    <div
-                      tabindex="0"
-                      role="button"
-                      class="btn btn-ghost btn-circle avatar"
-                    >
-                      <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
-                        <span class="text-lg font-bold">
-                          {user()?.username?.[0]?.toUpperCase() || "U"}
-                        </span>
+                    }
+                  >
+                    <div class="dropdown dropdown-end">
+                      <div
+                        tabindex="0"
+                        role="button"
+                        class="btn btn-ghost btn-circle avatar"
+                      >
+                        <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                          <span class="text-lg font-bold">
+                            {user()?.username?.[0]?.toUpperCase() || "U"}
+                          </span>
+                        </div>
                       </div>
+                      <ul
+                        tabindex="0"
+                        class="menu dropdown-content bg-base-100 border-2 border-base-300 rounded-box z-10 w-52 p-2 shadow-lg"
+                      >
+                        <li class="menu-title">
+                          <span>{user()?.username}</span>
+                        </li>
+                        <li>
+                          <form action={logout} method="post">
+                            <button
+                              type="submit"
+                              class="w-full text-left text-error"
+                            >
+                              Logout
+                            </button>
+                          </form>
+                        </li>
+                      </ul>
                     </div>
-                    <ul
-                      tabindex="0"
-                      class="menu dropdown-content bg-base-100 border-2 border-base-300 rounded-box z-10 w-52 p-2 shadow-lg"
-                    >
-                      <li class="menu-title">
-                        <span>{user()?.username}</span>
-                      </li>
-                      <li>
-                        <form action={logout} method="post">
-                          <button
-                            type="submit"
-                            class="w-full text-left text-error"
-                          >
-                            Logout
-                          </button>
-                        </form>
-                      </li>
-                    </ul>
-                  </div>
-                </Suspense>
+                  </Suspense>
+                </div>
               </div>
-            </div>
+            </Show>
             <Suspense>{props.children}</Suspense>
           </>
         );

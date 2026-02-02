@@ -46,7 +46,7 @@ export const GroupMembers = sqliteTable(
   })
 );
 
-export const PlaySessions = sqliteTable("play_sessions", {
+export const Lobbies = sqliteTable("lobbies", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   groupId: integer("group_id")
     .notNull()
@@ -59,12 +59,12 @@ export const PlaySessions = sqliteTable("play_sessions", {
   hostLastSeenAt: integer("host_last_seen_at").notNull(),
 });
 
-export const PlaySessionParticipants = sqliteTable(
-  "play_session_participants",
+export const LobbyParticipants = sqliteTable(
+  "lobby_participants",
   {
-    playSessionId: integer("play_session_id")
+    lobbyId: integer("lobby_id")
       .notNull()
-      .references(() => PlaySessions.id),
+      .references(() => Lobbies.id),
     userId: integer("user_id")
       .notNull()
       .references(() => Users.id),
@@ -74,17 +74,18 @@ export const PlaySessionParticipants = sqliteTable(
     joinedAt: integer("joined_at").notNull(),
   },
   (table) => ({
-    sessionUserIdx: uniqueIndex(
-      "play_session_participants_session_user_idx"
-    ).on(table.playSessionId, table.userId),
+    lobbyUserIdx: uniqueIndex("lobby_participants_lobby_user_idx").on(
+      table.lobbyId,
+      table.userId
+    ),
   })
 );
 
 export const Matches = sqliteTable("matches", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  playSessionId: integer("play_session_id")
+  lobbyId: integer("lobby_id")
     .notNull()
-    .references(() => PlaySessions.id),
+    .references(() => Lobbies.id),
   startedAt: integer("started_at").notNull(),
   endedAt: integer("ended_at"),
   winningTeam: integer("winning_team"), // 0 = team1, 1 = team2, null = cancelled/tie

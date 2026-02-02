@@ -1,40 +1,40 @@
 import { createAsync, useParams, type RouteDefinition } from "@solidjs/router";
 import {
   getUser,
-  getPlaySession,
+  getLobby,
   getActiveMatch,
-  inviteToPlaySession,
+  inviteToLobby,
   setSpectator,
-  endPlaySession,
+  endLobby,
   startMatch,
 } from "~/api";
 import { For, Show, createSignal, onMount, onCleanup } from "solid-js";
 import {
-  inviteToPlaySession as inviteToPlaySessionServer,
+  inviteToLobby as inviteToLobbyServer,
   setSpectator as setSpectatorServer,
-  endPlaySession as endPlaySessionServer,
-  leavePlaySession as leavePlaySessionServer,
-} from "~/api/play-sessions";
+  endLobby as endLobbyServer,
+  leaveLobby as leaveLobbyServer,
+} from "~/api/lobbies";
 import { startMatch as startMatchServer } from "~/api/matches";
 import { getGroupLeaderboard } from "~/api";
 
 export const route = {
   preload({ params }) {
-    const playSessionId = Number(params.playSessionId);
+    const lobbyId = Number(params.lobbyId);
     getUser();
-    getPlaySession(playSessionId);
-    getActiveMatch(playSessionId);
+    getLobby(lobbyId);
+    getActiveMatch(lobbyId);
   },
 } satisfies RouteDefinition;
 
-export default function PlaySessionPage() {
+export default function LobbyPage() {
   const params = useParams();
-  const playSessionId = () => Number(params.playSessionId);
+  const lobbyId = () => Number(params.lobbyId);
   const user = createAsync(async () => getUser(), { deferStream: true });
-  const playSession = createAsync(async () => getPlaySession(playSessionId()), {
+  const lobby = createAsync(async () => getLobby(lobbyId()), {
     deferStream: true,
   });
-  const activeMatch = createAsync(async () => getActiveMatch(playSessionId()), {
+  const activeMatch = createAsync(async () => getActiveMatch(lobbyId()), {
     deferStream: true,
   });
   const [showInviteModal, setShowInviteModal] = createSignal(false);
@@ -44,8 +44,8 @@ export default function PlaySessionPage() {
   // Get group members for inviting
   const groupMembers = createAsync(
     async () => {
-      const session = await getPlaySession(playSessionId());
-      return getGroupLeaderboard(session.groupId);
+      const lobbyData = await getLobby(lobbyId());
+      return getGroupLeaderboard(lobbyData.groupId);
     },
     { deferStream: true }
   );
@@ -55,7 +55,7 @@ export default function PlaySessionPage() {
 
   onMount(() => {
     // Connect to SSE stream
-    eventSource = new EventSource(`/api/sse/play-session/${playSessionId()}`);
+    eventSource = new EventSource(`/api/sse/lobby/${lobbyId()}`);
 
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -71,10 +71,10 @@ export default function PlaySessionPage() {
       }
     };
 
-    eventSource.addEventListener("play_session_invite", (event) => {
+    eventSource.addEventListener("lobby_invite", (event) => {
       const data = JSON.parse(event.data);
       if (data.userId === user()?.id) {
-        alert("You've been invited to this play session!");
+        alert("You've been invited to this lobby!");
         window.location.reload();
       }
     });
@@ -86,8 +86,8 @@ export default function PlaySessionPage() {
     }
   });
 
-  const isHost = () => playSession()?.isHost ?? false;
-  const participants = () => playSession()?.participants ?? [];
+  const isHost = () => lobby()?.isHost ?? false;
+  const participants = () => lobby()?.participants ?? [];
   const nonSpectators = () => participants().filter((p) => !p.isSpectator);
   const spectators = () => participants().filter((p) => p.isSpectator);
 
@@ -95,9 +95,7 @@ export default function PlaySessionPage() {
     <main class="w-full p-4 max-w-6xl mx-auto">
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <h2 class="card-title text-3xl text-primary">
-            Play Session #{playSessionId()}
-          </h2>
+          <h2 class="card-title text-3xl text-primary">Lobby #{lobbyId()}</h2>
 
           <Show when={isHost()}>
             <div class="badge badge-primary badge-lg">Host</div>
@@ -125,7 +123,7 @@ export default function PlaySessionPage() {
                   onsubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
-                    formData.append("playSessionId", String(playSessionId()));
+                    formData.append("lobbyId", String(lobbyId()));
                     formData.append("matchSize", String(matchSize()));
                     const result = await startMatchServer(formData);
                     if (result?.success) {
@@ -246,9 +244,9 @@ export default function PlaySessionPage() {
                         return;
                       }
                       const formData = new FormData();
-                      formData.append("playSessionId", String(playSessionId()));
+                      formData.append("lobbyId", String(lobbyId()));
                       formData.append("userIds", selectedUserIds().join(","));
-                      const result = await inviteToPlaySessionServer(formData);
+                      const result = await inviteToLobbyServer(formData);
                       if (result?.success) {
                         setShowInviteModal(false);
                         setSelectedUserIds([]);
@@ -280,10 +278,7 @@ export default function PlaySessionPage() {
                           class="btn btn-xs btn-ghost"
                           onclick={async () => {
                             const formData = new FormData();
-                            formData.append(
-                              "playSessionId",
-                              String(playSessionId())
-                            );
+                            formData.append("lobbyId", String(lobbyId()));
                             formData.append(
                               "userId",
                               String(participant.userId)
@@ -317,10 +312,7 @@ export default function PlaySessionPage() {
                           class="btn btn-xs btn-ghost"
                           onclick={async () => {
                             const formData = new FormData();
-                            formData.append(
-                              "playSessionId",
-                              String(playSessionId())
-                            );
+                            formData.append("lobbyId", String(lobbyId()));
                             formData.append(
                               "userId",
                               String(participant.userId)
@@ -353,22 +345,20 @@ export default function PlaySessionPage() {
               <button
                 class="btn btn-error"
                 onclick={async () => {
-                  if (
-                    !confirm("Are you sure you want to end this play session?")
-                  ) {
+                  if (!confirm("Are you sure you want to end this lobby?")) {
                     return;
                   }
                   const formData = new FormData();
-                  formData.append("playSessionId", String(playSessionId()));
-                  const result = await endPlaySessionServer(formData);
+                  formData.append("lobbyId", String(lobbyId()));
+                  const result = await endLobbyServer(formData);
                   if (result?.success) {
-                    window.location.href = `/groups/${playSession()?.groupId}`;
+                    window.location.href = `/groups/${lobby()?.groupId}`;
                   } else {
-                    alert(result?.error || "Failed to end play session");
+                    alert(result?.error || "Failed to end lobby");
                   }
                 }}
               >
-                End Play Session
+                End Lobby
               </button>
             </div>
           </Show>
@@ -378,24 +368,20 @@ export default function PlaySessionPage() {
               <button
                 class="btn btn-error btn-outline"
                 onclick={async () => {
-                  if (
-                    !confirm(
-                      "Are you sure you want to leave this play session?"
-                    )
-                  ) {
+                  if (!confirm("Are you sure you want to leave this lobby?")) {
                     return;
                   }
                   const formData = new FormData();
-                  formData.append("playSessionId", String(playSessionId()));
-                  const result = await leavePlaySessionServer(formData);
+                  formData.append("lobbyId", String(lobbyId()));
+                  const result = await leaveLobbyServer(formData);
                   if (result?.success) {
-                    window.location.href = `/groups/${playSession()?.groupId}`;
+                    window.location.href = `/groups/${lobby()?.groupId}`;
                   } else {
-                    alert(result?.error || "Failed to leave play session");
+                    alert(result?.error || "Failed to leave lobby");
                   }
                 }}
               >
-                Leave Play Session
+                Leave Lobby
               </button>
             </div>
           </Show>

@@ -7,7 +7,7 @@ import {
   EloScores,
   Matches,
   MatchParticipants,
-  PlaySessions,
+  Lobbies,
   Users,
 } from "../../drizzle/schema";
 import { getUser } from "./server";
@@ -127,17 +127,17 @@ export async function leaveGroup(formData: FormData) {
 
   if (remainingMembers.length === 0) {
     // Delete all related data
-    const playSessions = await db
-      .select({ id: PlaySessions.id })
-      .from(PlaySessions)
-      .where(eq(PlaySessions.groupId, groupId))
+    const lobbies = await db
+      .select({ id: Lobbies.id })
+      .from(Lobbies)
+      .where(eq(Lobbies.groupId, groupId))
       .all();
 
-    for (const session of playSessions) {
+    for (const lobby of lobbies) {
       const matches = await db
         .select({ id: Matches.id })
         .from(Matches)
-        .where(eq(Matches.playSessionId, session.id))
+        .where(eq(Matches.lobbyId, lobby.id))
         .all();
 
       for (const match of matches) {
@@ -146,13 +146,13 @@ export async function leaveGroup(formData: FormData) {
           .where(eq(MatchParticipants.matchId, match.id));
       }
 
-      await db.delete(Matches).where(eq(Matches.playSessionId, session.id));
+      await db.delete(Matches).where(eq(Matches.lobbyId, lobby.id));
       await db
-        .delete(PlaySessionParticipants)
-        .where(eq(PlaySessionParticipants.playSessionId, session.id));
+        .delete(LobbyParticipants)
+        .where(eq(LobbyParticipants.lobbyId, lobby.id));
     }
 
-    await db.delete(PlaySessions).where(eq(PlaySessions.groupId, groupId));
+    await db.delete(Lobbies).where(eq(Lobbies.groupId, groupId));
     await db.delete(Groups).where(eq(Groups.id, groupId));
   }
 

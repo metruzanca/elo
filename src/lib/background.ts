@@ -1,42 +1,37 @@
 import { db } from "../../drizzle/db";
-import { PlaySessions } from "../../drizzle/schema";
+import { Lobbies } from "../../drizzle/schema";
 import { eq, and, isNull, lt } from "drizzle-orm";
 import { sseManager } from "./sse";
 
 const AUTO_END_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
 const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
-export async function checkAndAutoEndPlaySessions() {
+export async function checkAndAutoEndLobbies() {
   const now = Date.now();
   const threshold = now - AUTO_END_THRESHOLD_MS;
 
-  // Find play sessions where host hasn't been seen for > 1 hour
-  const sessionsToEnd = await db
+  // Find lobbies where host hasn't been seen for > 1 hour
+  const lobbiesToEnd = await db
     .select()
-    .from(PlaySessions)
-    .where(
-      and(
-        isNull(PlaySessions.endedAt),
-        lt(PlaySessions.hostLastSeenAt, threshold)
-      )
-    )
+    .from(Lobbies)
+    .where(and(isNull(Lobbies.endedAt), lt(Lobbies.hostLastSeenAt, threshold)))
     .all();
 
-  for (const session of sessionsToEnd) {
-    // End the session
+  for (const lobby of lobbiesToEnd) {
+    // End the lobby
     await db
-      .update(PlaySessions)
+      .update(Lobbies)
       .set({ endedAt: now })
-      .where(eq(PlaySessions.id, session.id));
+      .where(eq(Lobbies.id, lobby.id));
 
     // Broadcast SSE event
-    sseManager.broadcastToPlaySession(session.id, {
-      type: "play_session_ended",
-      data: { playSessionId: session.id, reason: "host_offline" },
+    sseManager.broadcastToLobby(lobby.id, {
+      type: "lobby_ended",
+      data: { lobbyId: lobby.id, reason: "host_offline" },
     });
   }
 
-  return sessionsToEnd.length;
+  return lobbiesToEnd.length;
 }
 
 let intervalId: NodeJS.Timeout | null = null;
@@ -47,13 +42,13 @@ export function startBackgroundJobs() {
   }
 
   // Run immediately
-  checkAndAutoEndPlaySessions().catch((err) => {
+  checkAndAutoEndLobbies().catch((err) => {
     console.error("Error in background job:", err);
   });
 
   // Then run every CHECK_INTERVAL_MS
   intervalId = setInterval(() => {
-    checkAndAutoEndPlaySessions().catch((err) => {
+    checkAndAutoEndLobbies().catch((err) => {
       console.error("Error in background job:", err);
     });
   }, CHECK_INTERVAL_MS);

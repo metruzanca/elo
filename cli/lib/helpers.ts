@@ -4,8 +4,8 @@ import {
   Users,
   Groups,
   GroupMembers,
-  PlaySessions,
-  PlaySessionParticipants,
+  Lobbies,
+  LobbyParticipants,
   Matches,
   MatchParticipants,
   EloScores,
@@ -88,9 +88,9 @@ export async function joinGroupAsUser(
 }
 
 /**
- * Create a play session with user as host
+ * Create a lobby with user as host
  */
-export async function createPlaySessionAsUser(
+export async function createLobbyAsUser(
   userId: number,
   groupId: number
 ): Promise<{ id: number; groupId: number; hostId: number }> {
@@ -115,8 +115,8 @@ export async function createPlaySessionAsUser(
 
   const now = Date.now();
 
-  const playSession = await db
-    .insert(PlaySessions)
+  const lobby = await db
+    .insert(Lobbies)
     .values({
       groupId,
       hostId: userId,
@@ -127,40 +127,40 @@ export async function createPlaySessionAsUser(
     .get();
 
   // Add creator as participant
-  await db.insert(PlaySessionParticipants).values({
-    playSessionId: playSession.id,
+  await db.insert(LobbyParticipants).values({
+    lobbyId: lobby.id,
     userId,
     isSpectator: false,
     joinedAt: now,
   });
 
   return {
-    id: playSession.id,
-    groupId: playSession.groupId,
-    hostId: playSession.hostId,
+    id: lobby.id,
+    groupId: lobby.groupId,
+    hostId: lobby.hostId,
   };
 }
 
 /**
- * Invite user to play session (add as participant)
+ * Invite user to lobby (add as participant)
  */
-export async function inviteUserToSession(
-  playSessionId: number,
+export async function inviteUserToLobby(
+  lobbyId: number,
   userId: number
 ): Promise<void> {
-  // Verify play session exists
-  const playSession = await db
+  // Verify lobby exists
+  const lobby = await db
     .select()
-    .from(PlaySessions)
-    .where(eq(PlaySessions.id, playSessionId))
+    .from(Lobbies)
+    .where(eq(Lobbies.id, lobbyId))
     .get();
 
-  if (!playSession) {
-    throw new Error(`Play session with ID ${playSessionId} not found`);
+  if (!lobby) {
+    throw new Error(`Lobby with ID ${lobbyId} not found`);
   }
 
-  if (playSession.endedAt) {
-    throw new Error(`Play session ${playSessionId} has ended`);
+  if (lobby.endedAt) {
+    throw new Error(`Lobby ${lobbyId} has ended`);
   }
 
   // Verify user exists and is a member of the group
@@ -169,38 +169,36 @@ export async function inviteUserToSession(
     .from(GroupMembers)
     .where(
       and(
-        eq(GroupMembers.groupId, playSession.groupId),
+        eq(GroupMembers.groupId, lobby.groupId),
         eq(GroupMembers.userId, userId)
       )
     )
     .get();
 
   if (!membership) {
-    throw new Error(
-      `User ${userId} is not a member of group ${playSession.groupId}`
-    );
+    throw new Error(`User ${userId} is not a member of group ${lobby.groupId}`);
   }
 
   // Check if already a participant
   const existing = await db
     .select()
-    .from(PlaySessionParticipants)
+    .from(LobbyParticipants)
     .where(
       and(
-        eq(PlaySessionParticipants.playSessionId, playSessionId),
-        eq(PlaySessionParticipants.userId, userId)
+        eq(LobbyParticipants.lobbyId, lobbyId),
+        eq(LobbyParticipants.userId, userId)
       )
     )
     .get();
 
   if (existing) {
     throw new Error(
-      `User ${userId} is already a participant in play session ${playSessionId}`
+      `User ${userId} is already a participant in lobby ${lobbyId}`
     );
   }
 
-  await db.insert(PlaySessionParticipants).values({
-    playSessionId,
+  await db.insert(LobbyParticipants).values({
+    lobbyId,
     userId,
     isSpectator: false,
     joinedAt: Date.now(),
@@ -208,20 +206,20 @@ export async function inviteUserToSession(
 }
 
 /**
- * Join play session as user (same as invite, but different name for clarity)
+ * Join lobby as user (same as invite, but different name for clarity)
  */
-export async function joinPlaySessionAsUser(
+export async function joinLobbyAsUser(
   userId: number,
-  playSessionId: number
+  lobbyId: number
 ): Promise<void> {
-  return inviteUserToSession(playSessionId, userId);
+  return inviteUserToLobby(lobbyId, userId);
 }
 
 /**
- * Start a match in a play session
+ * Start a match in a lobby
  */
 export async function startMatchAsHost(
-  playSessionId: number,
+  lobbyId: number,
   matchSize: number
 ): Promise<{
   matchId: number;
@@ -231,19 +229,19 @@ export async function startMatchAsHost(
     throw new Error("Match size must be even for 2 teams");
   }
 
-  // Verify play session exists
-  const playSession = await db
+  // Verify lobby exists
+  const lobby = await db
     .select()
-    .from(PlaySessions)
-    .where(eq(PlaySessions.id, playSessionId))
+    .from(Lobbies)
+    .where(eq(Lobbies.id, lobbyId))
     .get();
 
-  if (!playSession) {
-    throw new Error(`Play session with ID ${playSessionId} not found`);
+  if (!lobby) {
+    throw new Error(`Lobby with ID ${lobbyId} not found`);
   }
 
-  if (playSession.endedAt) {
-    throw new Error(`Play session ${playSessionId} has ended`);
+  if (lobby.endedAt) {
+    throw new Error(`Lobby ${lobbyId} has ended`);
   }
 
   // Check if there's already an active match
@@ -252,7 +250,7 @@ export async function startMatchAsHost(
     .from(Matches)
     .where(
       and(
-        eq(Matches.playSessionId, playSessionId),
+        eq(Matches.lobbyId, lobbyId),
         isNull(Matches.endedAt),
         eq(Matches.cancelled, false)
       )
@@ -260,21 +258,19 @@ export async function startMatchAsHost(
     .get();
 
   if (activeMatch) {
-    throw new Error(
-      `There is already an active match in play session ${playSessionId}`
-    );
+    throw new Error(`There is already an active match in lobby ${lobbyId}`);
   }
 
   // Get participants with their Elo scores and games played
   const participants = await db
     .select({
-      userId: PlaySessionParticipants.userId,
-      isSpectator: PlaySessionParticipants.isSpectator,
+      userId: LobbyParticipants.userId,
+      isSpectator: LobbyParticipants.isSpectator,
       username: Users.username,
     })
-    .from(PlaySessionParticipants)
-    .innerJoin(Users, eq(PlaySessionParticipants.userId, Users.id))
-    .where(eq(PlaySessionParticipants.playSessionId, playSessionId))
+    .from(LobbyParticipants)
+    .innerJoin(Users, eq(LobbyParticipants.userId, Users.id))
+    .where(eq(LobbyParticipants.lobbyId, lobbyId))
     .all();
 
   // Get Elo scores and games played for each participant
@@ -294,19 +290,19 @@ export async function startMatchAsHost(
         .from(EloScores)
         .where(
           and(
-            eq(EloScores.groupId, playSession.groupId),
+            eq(EloScores.groupId, lobby.groupId),
             eq(EloScores.userId, p.userId)
           )
         )
         .get();
 
-      // Count games played in this session (completed matches only)
+      // Count games played in this lobby (completed matches only)
       const completedMatches = await db
         .select({ id: Matches.id })
         .from(Matches)
         .where(
           and(
-            eq(Matches.playSessionId, playSessionId),
+            eq(Matches.lobbyId, lobbyId),
             isNotNull(Matches.endedAt),
             eq(Matches.cancelled, false)
           )
@@ -350,7 +346,7 @@ export async function startMatchAsHost(
   const match = await db
     .insert(Matches)
     .values({
-      playSessionId,
+      lobbyId,
       startedAt: Date.now(),
       matchSize,
       cancelled: false,
@@ -366,7 +362,7 @@ export async function startMatchAsHost(
       .from(EloScores)
       .where(
         and(
-          eq(EloScores.groupId, playSession.groupId),
+          eq(EloScores.groupId, lobby.groupId),
           eq(EloScores.userId, player.userId)
         )
       )
@@ -387,7 +383,7 @@ export async function startMatchAsHost(
       .from(EloScores)
       .where(
         and(
-          eq(EloScores.groupId, playSession.groupId),
+          eq(EloScores.groupId, lobby.groupId),
           eq(EloScores.userId, player.userId)
         )
       )
@@ -468,9 +464,9 @@ export async function listGroups(): Promise<
 }
 
 /**
- * List all play sessions with participant count
+ * List all lobbies with participant count
  */
-export async function listPlaySessions(): Promise<
+export async function listLobbies(): Promise<
   Array<{
     id: number;
     groupId: number;
@@ -482,37 +478,37 @@ export async function listPlaySessions(): Promise<
     endedAt: number | null;
   }>
 > {
-  const sessions = await db
+  const lobbies = await db
     .select({
-      session: PlaySessions,
+      lobby: Lobbies,
       hostUsername: Users.username,
     })
-    .from(PlaySessions)
-    .innerJoin(Users, eq(PlaySessions.hostId, Users.id))
-    .orderBy(PlaySessions.id)
+    .from(Lobbies)
+    .innerJoin(Users, eq(Lobbies.hostId, Users.id))
+    .orderBy(Lobbies.id)
     .all();
 
-  const sessionsWithParticipants = await Promise.all(
-    sessions.map(async (s) => {
+  const lobbiesWithParticipants = await Promise.all(
+    lobbies.map(async (l) => {
       const participants = await db
         .select()
-        .from(PlaySessionParticipants)
-        .where(eq(PlaySessionParticipants.playSessionId, s.session.id))
+        .from(LobbyParticipants)
+        .where(eq(LobbyParticipants.lobbyId, l.lobby.id))
         .all();
 
-      const status: "active" | "ended" = s.session.endedAt ? "ended" : "active";
+      const status: "active" | "ended" = l.lobby.endedAt ? "ended" : "active";
       return {
-        id: s.session.id,
-        groupId: s.session.groupId,
-        hostId: s.session.hostId,
-        hostUsername: s.hostUsername,
+        id: l.lobby.id,
+        groupId: l.lobby.groupId,
+        hostId: l.lobby.hostId,
+        hostUsername: l.hostUsername,
         status,
         participantCount: participants.length,
-        createdAt: s.session.createdAt,
-        endedAt: s.session.endedAt,
+        createdAt: l.lobby.createdAt,
+        endedAt: l.lobby.endedAt,
       };
     })
   );
 
-  return sessionsWithParticipants;
+  return lobbiesWithParticipants;
 }

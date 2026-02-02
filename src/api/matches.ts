@@ -4,8 +4,8 @@ import { db } from "../../drizzle/db";
 import {
   Matches,
   MatchParticipants,
-  PlaySessions,
-  PlaySessionParticipants,
+  Lobbies,
+  LobbyParticipants,
   EloScores,
   Users,
   GroupMembers,
@@ -22,13 +22,13 @@ import { sseManager } from "../lib/sse";
 
 export async function startMatch(formData: FormData) {
   const user = await getUser();
-  const playSessionId = Number(formData.get("playSessionId"));
+  const lobbyId = Number(formData.get("lobbyId"));
   const matchSize = Number(formData.get("matchSize"));
 
-  if (!playSessionId || !matchSize) {
+  if (!lobbyId || !matchSize) {
     return {
       success: false,
-      error: "Play session ID and match size are required",
+      error: "Lobby ID and match size are required",
     };
   }
 
@@ -36,22 +36,22 @@ export async function startMatch(formData: FormData) {
     return { success: false, error: "Match size must be even for 2 teams" };
   }
 
-  const playSession = await db
+  const lobby = await db
     .select()
-    .from(PlaySessions)
-    .where(eq(PlaySessions.id, playSessionId))
+    .from(Lobbies)
+    .where(eq(Lobbies.id, lobbyId))
     .get();
 
-  if (!playSession) {
-    return { success: false, error: "Play session not found" };
+  if (!lobby) {
+    return { success: false, error: "Lobby not found" };
   }
 
-  if (playSession.hostId !== user.id) {
+  if (lobby.hostId !== user.id) {
     return { success: false, error: "Only the host can start a match" };
   }
 
-  if (playSession.endedAt) {
-    return { success: false, error: "Play session has ended" };
+  if (lobby.endedAt) {
+    return { success: false, error: "Lobby has ended" };
   }
 
   // Check if there's already an active match
@@ -60,7 +60,7 @@ export async function startMatch(formData: FormData) {
     .from(Matches)
     .where(
       and(
-        eq(Matches.playSessionId, playSessionId),
+        eq(Matches.lobbyId, lobbyId),
         isNull(Matches.endedAt),
         eq(Matches.cancelled, false)
       )
@@ -74,13 +74,13 @@ export async function startMatch(formData: FormData) {
   // Get participants with their Elo scores and games played
   const participants = await db
     .select({
-      userId: PlaySessionParticipants.userId,
-      isSpectator: PlaySessionParticipants.isSpectator,
+      userId: LobbyParticipants.userId,
+      isSpectator: LobbyParticipants.isSpectator,
       username: Users.username,
     })
-    .from(PlaySessionParticipants)
-    .innerJoin(Users, eq(PlaySessionParticipants.userId, Users.id))
-    .where(eq(PlaySessionParticipants.playSessionId, playSessionId))
+    .from(LobbyParticipants)
+    .innerJoin(Users, eq(LobbyParticipants.userId, Users.id))
+    .where(eq(LobbyParticipants.lobbyId, lobbyId))
     .all();
 
   // Get Elo scores and games played for each participant
@@ -100,19 +100,19 @@ export async function startMatch(formData: FormData) {
         .from(EloScores)
         .where(
           and(
-            eq(EloScores.groupId, playSession.groupId),
+            eq(EloScores.groupId, lobby.groupId),
             eq(EloScores.userId, p.userId)
           )
         )
         .get();
 
-      // Count games played in this session (completed matches only)
+      // Count games played in this lobby (completed matches only)
       const completedMatches = await db
         .select({ id: Matches.id })
         .from(Matches)
         .where(
           and(
-            eq(Matches.playSessionId, playSessionId),
+            eq(Matches.lobbyId, lobbyId),
             isNotNull(Matches.endedAt),
             eq(Matches.cancelled, false)
           )
@@ -156,7 +156,7 @@ export async function startMatch(formData: FormData) {
   const match = await db
     .insert(Matches)
     .values({
-      playSessionId,
+      lobbyId,
       startedAt: Date.now(),
       matchSize,
       cancelled: false,
@@ -172,7 +172,7 @@ export async function startMatch(formData: FormData) {
       .from(EloScores)
       .where(
         and(
-          eq(EloScores.groupId, playSession.groupId),
+          eq(EloScores.groupId, lobby.groupId),
           eq(EloScores.userId, player.userId)
         )
       )
@@ -193,7 +193,7 @@ export async function startMatch(formData: FormData) {
       .from(EloScores)
       .where(
         and(
-          eq(EloScores.groupId, playSession.groupId),
+          eq(EloScores.groupId, lobby.groupId),
           eq(EloScores.userId, player.userId)
         )
       )
@@ -211,7 +211,7 @@ export async function startMatch(formData: FormData) {
   await db.insert(MatchParticipants).values(matchParticipants);
 
   // Broadcast SSE events
-  sseManager.broadcastToPlaySession(playSession.id, {
+  sseManager.broadcastToLobby(lobby.id, {
     type: "match_started",
     data: { matchId: match.id, matchSize, teamAssignment },
   });
@@ -247,17 +247,17 @@ export async function endMatch(formData: FormData) {
     return { success: false, error: "Match not found" };
   }
 
-  const playSession = await db
+  const lobby = await db
     .select()
-    .from(PlaySessions)
-    .where(eq(PlaySessions.id, match.playSessionId))
+    .from(Lobbies)
+    .where(eq(Lobbies.id, match.lobbyId))
     .get();
 
-  if (!playSession) {
-    return { success: false, error: "Play session not found" };
+  if (!lobby) {
+    return { success: false, error: "Lobby not found" };
   }
 
-  if (playSession.hostId !== user.id) {
+  if (lobby.hostId !== user.id) {
     return { success: false, error: "Only the host can end a match" };
   }
 
@@ -300,7 +300,7 @@ export async function endMatch(formData: FormData) {
       .from(EloScores)
       .where(
         and(
-          eq(EloScores.groupId, playSession.groupId),
+          eq(EloScores.groupId, lobby.groupId),
           eq(EloScores.userId, participant.userId)
         )
       )
@@ -340,7 +340,7 @@ export async function endMatch(formData: FormData) {
         })
         .where(
           and(
-            eq(EloScores.groupId, playSession.groupId),
+            eq(EloScores.groupId, lobby.groupId),
             eq(EloScores.userId, participant.userId)
           )
         );
@@ -348,7 +348,7 @@ export async function endMatch(formData: FormData) {
       // First match for this player in this group
       const newStreak = won ? 1 : 0;
       await db.insert(EloScores).values({
-        groupId: playSession.groupId,
+        groupId: lobby.groupId,
         userId: participant.userId,
         elo: newElo,
         gamesWon: won ? 1 : 0,
@@ -391,7 +391,7 @@ export async function endMatch(formData: FormData) {
     .where(eq(Matches.id, matchId));
 
   // Broadcast SSE events
-  sseManager.broadcastToPlaySession(playSession.id, {
+  sseManager.broadcastToLobby(lobby.id, {
     type: "match_ended",
     data: { matchId, winningTeam },
   });
@@ -430,17 +430,17 @@ export async function cancelMatch(formData: FormData) {
     return { success: false, error: "Match not found" };
   }
 
-  const playSession = await db
+  const lobby = await db
     .select()
-    .from(PlaySessions)
-    .where(eq(PlaySessions.id, match.playSessionId))
+    .from(Lobbies)
+    .where(eq(Lobbies.id, match.lobbyId))
     .get();
 
-  if (!playSession) {
-    return { success: false, error: "Play session not found" };
+  if (!lobby) {
+    return { success: false, error: "Lobby not found" };
   }
 
-  if (playSession.hostId !== user.id) {
+  if (lobby.hostId !== user.id) {
     return { success: false, error: "Only the host can cancel a match" };
   }
 
@@ -478,17 +478,17 @@ export async function penalizePlayer(formData: FormData) {
     return { success: false, error: "Match not found" };
   }
 
-  const playSession = await db
+  const lobby = await db
     .select()
-    .from(PlaySessions)
-    .where(eq(PlaySessions.id, match.playSessionId))
+    .from(Lobbies)
+    .where(eq(Lobbies.id, match.lobbyId))
     .get();
 
-  if (!playSession) {
-    return { success: false, error: "Play session not found" };
+  if (!lobby) {
+    return { success: false, error: "Lobby not found" };
   }
 
-  if (playSession.hostId !== user.id) {
+  if (lobby.hostId !== user.id) {
     return { success: false, error: "Only the host can penalize players" };
   }
 
@@ -540,11 +540,11 @@ export async function getMatch(matchId: number) {
   const team0 = participants.filter((p) => p.team === 0);
   const team1 = participants.filter((p) => p.team === 1);
 
-  // Get play session to check host
-  const playSession = await db
+  // Get lobby to check host
+  const lobby = await db
     .select()
-    .from(PlaySessions)
-    .where(eq(PlaySessions.id, match.playSessionId))
+    .from(Lobbies)
+    .where(eq(Lobbies.id, match.lobbyId))
     .get();
 
   const user = await getUser();
@@ -553,11 +553,11 @@ export async function getMatch(matchId: number) {
     ...match,
     team0,
     team1,
-    isHost: playSession?.hostId === user.id,
+    isHost: lobby?.hostId === user.id,
   };
 }
 
-export async function getActiveMatch(playSessionId: number) {
+export async function getActiveMatch(lobbyId: number) {
   await getUser(); // Ensure authenticated
 
   const match = await db
@@ -565,7 +565,7 @@ export async function getActiveMatch(playSessionId: number) {
     .from(Matches)
     .where(
       and(
-        eq(Matches.playSessionId, playSessionId),
+        eq(Matches.lobbyId, lobbyId),
         isNull(Matches.endedAt),
         eq(Matches.cancelled, false)
       )
@@ -595,24 +595,24 @@ export async function getGroupMatchHistory(groupId: number) {
     throw new Error("Not a member of this group");
   }
 
-  // Get all play sessions for this group
-  const sessions = await db
-    .select({ id: PlaySessions.id })
-    .from(PlaySessions)
-    .where(eq(PlaySessions.groupId, groupId))
+  // Get all lobbies for this group
+  const lobbies = await db
+    .select({ id: Lobbies.id })
+    .from(Lobbies)
+    .where(eq(Lobbies.groupId, groupId))
     .all();
 
-  const sessionIds = sessions.map((s) => s.id);
+  const lobbyIds = lobbies.map((l) => l.id);
 
-  if (sessionIds.length === 0) {
+  if (lobbyIds.length === 0) {
     return [];
   }
 
-  // Get all matches for these play sessions
+  // Get all matches for these lobbies
   const allMatches = await db
     .select()
     .from(Matches)
-    .where(inArray(Matches.playSessionId, sessionIds))
+    .where(inArray(Matches.lobbyId, lobbyIds))
     .orderBy(desc(Matches.startedAt))
     .all();
 

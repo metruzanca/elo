@@ -168,7 +168,7 @@ export default function MatchPage() {
           <div class="flex justify-between items-center">
             <h2 class="card-title text-3xl text-primary">Match #{matchId()}</h2>
             <Show
-              when={match()?.playSessionId}
+              when={match()?.lobbyId}
               fallback={
                 <a href="/" class="btn btn-ghost btn-sm">
                   Back
@@ -176,10 +176,10 @@ export default function MatchPage() {
               }
             >
               <a
-                href={`/play-sessions/${match()!.playSessionId}`}
+                href={`/lobbies/${match()!.lobbyId}`}
                 class="btn btn-ghost btn-sm"
               >
-                Back to Session
+                Back to Lobby
               </a>
             </Show>
           </div>

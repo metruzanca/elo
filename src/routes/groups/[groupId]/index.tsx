@@ -3,13 +3,13 @@ import {
   getUser,
   getGroup,
   getGroupLeaderboard,
-  getActivePlaySessions,
-  createPlaySession,
+  getActiveLobbies,
+  createLobby,
   leaveGroup,
   regenerateInviteCode,
 } from "~/api";
 import { For, Show, createSignal } from "solid-js";
-import { createPlaySession as createPlaySessionServer } from "~/api/play-sessions";
+import { createLobby as createLobbyServer } from "~/api/lobbies";
 import { leaveGroup as leaveGroupServer } from "~/api/groups";
 
 export const route = {
@@ -18,7 +18,7 @@ export const route = {
     getUser();
     getGroup(groupId);
     getGroupLeaderboard(groupId);
-    getActivePlaySessions(groupId);
+    getActiveLobbies(groupId);
   },
 } satisfies RouteDefinition;
 
@@ -32,20 +32,17 @@ export default function GroupPage() {
   const leaderboard = createAsync(async () => getGroupLeaderboard(groupId()), {
     deferStream: true,
   });
-  const playSessions = createAsync(
-    async () => getActivePlaySessions(groupId()),
-    { deferStream: true }
-  );
-  const [showCreateSession, setShowCreateSession] = createSignal(false);
+  const lobbies = createAsync(async () => getActiveLobbies(groupId()), {
+    deferStream: true,
+  });
+  const [showCreateLobby, setShowCreateLobby] = createSignal(false);
 
-  // Find active session where user is host
-  const hostActiveSession = () => {
-    const sessions = playSessions();
+  // Find active lobby where user is host
+  const hostActiveLobby = () => {
+    const lobbiesList = lobbies();
     const currentUser = user();
-    if (!sessions || !currentUser) return null;
-    return (
-      sessions.find((session) => session.hostId === currentUser.id) || null
-    );
+    if (!lobbiesList || !currentUser) return null;
+    return lobbiesList.find((lobby) => lobby.hostId === currentUser.id) || null;
   };
 
   return (
@@ -109,21 +106,21 @@ export default function GroupPage() {
 
           <div class="flex gap-4 flex-wrap mb-4">
             <Show
-              when={hostActiveSession()}
+              when={hostActiveLobby()}
               fallback={
                 <button
                   class="btn btn-primary"
-                  onclick={() => setShowCreateSession(true)}
+                  onclick={() => setShowCreateLobby(true)}
                 >
-                  Create Play Session
+                  Create Lobby
                 </button>
               }
             >
               <a
-                href={`/play-sessions/${hostActiveSession()!.id}`}
+                href={`/lobbies/${hostActiveLobby()!.id}`}
                 class="btn btn-primary"
               >
-                Go to Active Session
+                Go to Active Lobby
               </a>
             </Show>
             <a href={`/groups/${groupId()}/history`} class="btn btn-secondary">
@@ -131,27 +128,27 @@ export default function GroupPage() {
             </a>
           </div>
 
-          <Show when={showCreateSession()}>
+          <Show when={showCreateLobby()}>
             <div class="card bg-base-200 mt-4">
               <div class="card-body">
-                <h3 class="card-title">Create Play Session</h3>
+                <h3 class="card-title">Create Lobby</h3>
                 <form
                   onsubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     formData.append("groupId", String(groupId()));
-                    const result = await createPlaySessionServer(formData);
+                    const result = await createLobbyServer(formData);
                     if (result?.success) {
-                      setShowCreateSession(false);
-                      window.location.href = `/play-sessions/${result.playSession.id}`;
+                      setShowCreateLobby(false);
+                      window.location.href = `/lobbies/${result.lobby.id}`;
                     } else {
-                      alert(result?.error || "Failed to create play session");
+                      alert(result?.error || "Failed to create lobby");
                     }
                   }}
                 >
                   <div class="form-control mt-4">
                     <button type="submit" class="btn btn-primary">
-                      Create Session
+                      Create Lobby
                     </button>
                   </div>
                 </form>
@@ -214,30 +211,30 @@ export default function GroupPage() {
 
           <div class="divider"></div>
 
-          <h3 class="text-xl font-semibold mb-4">Active Play Sessions</h3>
+          <h3 class="text-xl font-semibold mb-4">Active Lobbies</h3>
           <Show
-            when={playSessions() && playSessions()!.length > 0}
+            when={lobbies() && lobbies()!.length > 0}
             fallback={
               <p class="text-base-content/70">
-                No active play sessions. Create one to get started!
+                No active lobbies. Create one to get started!
               </p>
             }
           >
             <div class="grid gap-4">
-              <For each={playSessions()}>
-                {(session) => (
+              <For each={lobbies()}>
+                {(lobby) => (
                   <div class="card bg-base-200">
                     <div class="card-body">
-                      <h4 class="card-title">Play Session #{session.id}</h4>
+                      <h4 class="card-title">Lobby #{lobby.id}</h4>
                       <p class="text-sm text-base-content/70">
-                        Started: {new Date(session.createdAt).toLocaleString()}
+                        Started: {new Date(lobby.createdAt).toLocaleString()}
                       </p>
                       <div class="card-actions justify-end">
                         <a
-                          href={`/play-sessions/${session.id}`}
+                          href={`/lobbies/${lobby.id}`}
                           class="btn btn-primary btn-sm"
                         >
-                          Join Session
+                          Join Lobby
                         </a>
                       </div>
                     </div>

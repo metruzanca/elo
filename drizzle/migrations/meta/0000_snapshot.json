@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0bbe5a83-36ba-4986-b90a-8cf446768fd8",
+  "id": "3037f1fd-3ed3-4615-8605-29e4592344f5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "elo_scores": {
@@ -258,6 +258,158 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
+    "lobbies": {
+      "name": "lobbies",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "host_id": {
+          "name": "host_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "host_last_seen_at": {
+          "name": "host_last_seen_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "lobbies_group_id_groups_id_fk": {
+          "name": "lobbies_group_id_groups_id_fk",
+          "tableFrom": "lobbies",
+          "tableTo": "groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lobbies_host_id_users_id_fk": {
+          "name": "lobbies_host_id_users_id_fk",
+          "tableFrom": "lobbies",
+          "tableTo": "users",
+          "columnsFrom": [
+            "host_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "lobby_participants": {
+      "name": "lobby_participants",
+      "columns": {
+        "lobby_id": {
+          "name": "lobby_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_spectator": {
+          "name": "is_spectator",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "lobby_participants_lobby_user_idx": {
+          "name": "lobby_participants_lobby_user_idx",
+          "columns": [
+            "lobby_id",
+            "user_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "lobby_participants_lobby_id_lobbies_id_fk": {
+          "name": "lobby_participants_lobby_id_lobbies_id_fk",
+          "tableFrom": "lobby_participants",
+          "tableTo": "lobbies",
+          "columnsFrom": [
+            "lobby_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lobby_participants_user_id_users_id_fk": {
+          "name": "lobby_participants_user_id_users_id_fk",
+          "tableFrom": "lobby_participants",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
     "match_participants": {
       "name": "match_participants",
       "columns": {
@@ -363,8 +515,8 @@
           "notNull": true,
           "autoincrement": true
         },
-        "play_session_id": {
-          "name": "play_session_id",
+        "lobby_id": {
+          "name": "lobby_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -409,164 +561,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "matches_play_session_id_play_sessions_id_fk": {
-          "name": "matches_play_session_id_play_sessions_id_fk",
+        "matches_lobby_id_lobbies_id_fk": {
+          "name": "matches_lobby_id_lobbies_id_fk",
           "tableFrom": "matches",
-          "tableTo": "play_sessions",
+          "tableTo": "lobbies",
           "columnsFrom": [
-            "play_session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "play_session_participants": {
-      "name": "play_session_participants",
-      "columns": {
-        "play_session_id": {
-          "name": "play_session_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "is_spectator": {
-          "name": "is_spectator",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "joined_at": {
-          "name": "joined_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "play_session_participants_session_user_idx": {
-          "name": "play_session_participants_session_user_idx",
-          "columns": [
-            "play_session_id",
-            "user_id"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "play_session_participants_play_session_id_play_sessions_id_fk": {
-          "name": "play_session_participants_play_session_id_play_sessions_id_fk",
-          "tableFrom": "play_session_participants",
-          "tableTo": "play_sessions",
-          "columnsFrom": [
-            "play_session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "play_session_participants_user_id_users_id_fk": {
-          "name": "play_session_participants_user_id_users_id_fk",
-          "tableFrom": "play_session_participants",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "play_sessions": {
-      "name": "play_sessions",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "group_id": {
-          "name": "group_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "host_id": {
-          "name": "host_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "ended_at": {
-          "name": "ended_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "host_last_seen_at": {
-          "name": "host_last_seen_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "play_sessions_group_id_groups_id_fk": {
-          "name": "play_sessions_group_id_groups_id_fk",
-          "tableFrom": "play_sessions",
-          "tableTo": "groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "play_sessions_host_id_users_id_fk": {
-          "name": "play_sessions_host_id_users_id_fk",
-          "tableFrom": "play_sessions",
-          "tableTo": "users",
-          "columnsFrom": [
-            "host_id"
+            "lobby_id"
           ],
           "columnsTo": [
             "id"

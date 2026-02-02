@@ -35,9 +35,7 @@ export default function Home() {
           <h2 class="card-title text-3xl text-primary">
             Welcome, {user()?.username}!
           </h2>
-          <p class="text-base-content/70">
-            Manage your Elo groups and play sessions
-          </p>
+          <p class="text-base-content/70">Manage your Elo groups and lobbies</p>
 
           <div class="divider"></div>
 

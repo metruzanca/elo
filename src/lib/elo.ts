@@ -143,7 +143,7 @@ export function balanceTeams(
 
 /**
  * Select players for a match ensuring similar gametime
- * Prioritizes players with fewer games played in the session
+ * Prioritizes players with fewer games played in the lobby
  */
 export function selectPlayersForMatch(
   participants: Array<{

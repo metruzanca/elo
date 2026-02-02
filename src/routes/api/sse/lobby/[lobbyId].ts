@@ -6,7 +6,7 @@ import {
 } from "vinxi/http";
 import { sseManager, type SSEClient } from "~/lib/sse";
 import { getUser } from "~/api/server";
-import { getPlaySession } from "~/api/play-sessions";
+import { getLobby } from "~/api/lobbies";
 import { rateLimit, getClientIdentifier } from "~/lib/rate-limit";
 
 export const GET = eventHandler(async (event) => {
@@ -22,7 +22,7 @@ export const GET = eventHandler(async (event) => {
     });
     return "Too Many Requests";
   }
-  const playSessionId = Number(getRouterParam(event, "playSessionId"));
+  const lobbyId = Number(getRouterParam(event, "lobbyId"));
 
   let user;
   try {
@@ -32,14 +32,14 @@ export const GET = eventHandler(async (event) => {
     return "Unauthorized";
   }
 
-  if (!playSessionId) {
+  if (!lobbyId) {
     setResponseStatus(event, 400);
-    return "Play session ID required";
+    return "Lobby ID required";
   }
 
-  // Verify user has access to this play session
+  // Verify user has access to this lobby
   try {
-    await getPlaySession(playSessionId);
+    await getLobby(lobbyId);
   } catch (error) {
     setResponseStatus(event, 403);
     return "Unauthorized";
@@ -53,7 +53,7 @@ export const GET = eventHandler(async (event) => {
     "X-Accel-Buffering": "no",
   });
 
-  const clientId = `${user.id}-${playSessionId}-${Date.now()}`;
+  const clientId = `${user.id}-${lobbyId}-${Date.now()}`;
   let isConnected = true;
   let writeStream: any = null;
 
@@ -64,7 +64,7 @@ export const GET = eventHandler(async (event) => {
   const client: SSEClient = {
     id: clientId,
     userId: user.id,
-    playSessionId,
+    lobbyId,
     send: (sseEvent) => {
       if (!isConnected || !res) return;
       const data = `event: ${sseEvent.type}\ndata: ${JSON.stringify(
@@ -88,7 +88,7 @@ export const GET = eventHandler(async (event) => {
   setTimeout(() => {
     client.send({
       type: "player_joined",
-      data: { message: "Connected to play session" },
+      data: { message: "Connected to lobby" },
     });
   }, 100);
 

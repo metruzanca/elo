@@ -3,7 +3,7 @@
 import { program } from "commander";
 import { registerUserCommands } from "./commands/user";
 import { registerGroupCommands } from "./commands/group";
-import { registerSessionCommands } from "./commands/session";
+import { registerLobbyCommands } from "./commands/lobby";
 import { registerMatchCommands } from "./commands/match";
 
 program
@@ -14,7 +14,7 @@ program
 // Register all command groups
 registerUserCommands(program);
 registerGroupCommands(program);
-registerSessionCommands(program);
+registerLobbyCommands(program);
 registerMatchCommands(program);
 
 // Show help if no command provided (exit code 0)

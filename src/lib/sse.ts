@@ -1,11 +1,11 @@
 export type SSEEventType =
-  | "play_session_invite"
+  | "lobby_invite"
   | "player_joined"
   | "player_left"
   | "match_started"
   | "match_ended"
   | "elo_update"
-  | "play_session_ended";
+  | "lobby_ended";
 
 export interface SSEEvent {
   type: SSEEventType;
@@ -15,7 +15,7 @@ export interface SSEEvent {
 export interface SSEClient {
   id: string;
   userId: number;
-  playSessionId?: number;
+  lobbyId?: number;
   matchId?: number;
   send: (event: SSEEvent) => void;
   close: () => void;
@@ -23,17 +23,17 @@ export interface SSEClient {
 
 class SSEManager {
   private clients: Map<string, SSEClient> = new Map();
-  private playSessionClients: Map<number, Set<string>> = new Map();
+  private lobbyClients: Map<number, Set<string>> = new Map();
   private matchClients: Map<number, Set<string>> = new Map();
 
   addClient(client: SSEClient) {
     this.clients.set(client.id, client);
 
-    if (client.playSessionId) {
-      if (!this.playSessionClients.has(client.playSessionId)) {
-        this.playSessionClients.set(client.playSessionId, new Set());
+    if (client.lobbyId) {
+      if (!this.lobbyClients.has(client.lobbyId)) {
+        this.lobbyClients.set(client.lobbyId, new Set());
       }
-      this.playSessionClients.get(client.playSessionId)!.add(client.id);
+      this.lobbyClients.get(client.lobbyId)!.add(client.id);
     }
 
     if (client.matchId) {
@@ -48,12 +48,12 @@ class SSEManager {
     const client = this.clients.get(clientId);
     if (!client) return;
 
-    if (client.playSessionId) {
-      const sessionClients = this.playSessionClients.get(client.playSessionId);
-      if (sessionClients) {
-        sessionClients.delete(clientId);
-        if (sessionClients.size === 0) {
-          this.playSessionClients.delete(client.playSessionId);
+    if (client.lobbyId) {
+      const lobbyClientsSet = this.lobbyClients.get(client.lobbyId);
+      if (lobbyClientsSet) {
+        lobbyClientsSet.delete(clientId);
+        if (lobbyClientsSet.size === 0) {
+          this.lobbyClients.delete(client.lobbyId);
         }
       }
     }
@@ -71,8 +71,8 @@ class SSEManager {
     this.clients.delete(clientId);
   }
 
-  broadcastToPlaySession(playSessionId: number, event: SSEEvent) {
-    const clientIds = this.playSessionClients.get(playSessionId);
+  broadcastToLobby(lobbyId: number, event: SSEEvent) {
+    const clientIds = this.lobbyClients.get(lobbyId);
     if (!clientIds) return;
 
     for (const clientId of clientIds) {
@@ -117,9 +117,9 @@ class SSEManager {
     }
   }
 
-  getClientCount(playSessionId?: number, matchId?: number): number {
-    if (playSessionId) {
-      return this.playSessionClients.get(playSessionId)?.size || 0;
+  getClientCount(lobbyId?: number, matchId?: number): number {
+    if (lobbyId) {
+      return this.lobbyClients.get(lobbyId)?.size || 0;
     }
     if (matchId) {
       return this.matchClients.get(matchId)?.size || 0;

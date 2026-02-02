@@ -10,16 +10,16 @@ import {
   getGroupLeaderboard as gGL,
 } from "./groups";
 import {
-  createPlaySession as cPS,
-  joinPlaySession as jPS,
-  leavePlaySession as lPS,
-  getPlaySession as gPS,
-  getActivePlaySessions as gAPS,
-  getUserActivePlaySession as gUAPS,
-  inviteToPlaySession as iTPS,
+  createLobby as cL,
+  joinLobby as jL,
+  leaveLobby as lL,
+  getLobby as gL,
+  getActiveLobbies as gAL,
+  getUserActiveLobby as gUAL,
+  inviteToLobby as iTL,
   setSpectator as sS,
-  endPlaySession as ePS,
-} from "./play-sessions";
+  endLobby as eL,
+} from "./lobbies";
 import {
   startMatch as sM,
   endMatch as eM,
@@ -42,15 +42,15 @@ export const getGroup = query(gG, "group");
 export const regenerateInviteCode = action(rIC, "regenerateInviteCode");
 export const getGroupLeaderboard = query(gGL, "groupLeaderboard");
 
-export const createPlaySession = action(cPS, "createPlaySession");
-export const joinPlaySession = action(jPS, "joinPlaySession");
-export const leavePlaySession = action(lPS, "leavePlaySession");
-export const getPlaySession = query(gPS, "playSession");
-export const getActivePlaySessions = query(gAPS, "activePlaySessions");
-export const getUserActivePlaySession = query(gUAPS, "userActivePlaySession");
-export const inviteToPlaySession = action(iTPS, "inviteToPlaySession");
+export const createLobby = action(cL, "createLobby");
+export const joinLobby = action(jL, "joinLobby");
+export const leaveLobby = action(lL, "leaveLobby");
+export const getLobby = query(gL, "lobby");
+export const getActiveLobbies = query(gAL, "activeLobbies");
+export const getUserActiveLobby = query(gUAL, "userActiveLobby");
+export const inviteToLobby = action(iTL, "inviteToLobby");
 export const setSpectator = action(sS, "setSpectator");
-export const endPlaySession = action(ePS, "endPlaySession");
+export const endLobby = action(eL, "endLobby");
 
 export const startMatch = action(sM, "startMatch");
 export const endMatch = action(eM, "endMatch");

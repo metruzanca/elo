@@ -9,7 +9,7 @@ import { getUser } from "~/api/server";
 import { getMatch } from "~/api/matches";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
-import { PlaySessionParticipants, Matches } from "@/schema";
+import { LobbyParticipants, Matches } from "@/schema";
 import { rateLimit, getClientIdentifier } from "~/lib/rate-limit";
 
 export const GET = eventHandler(async (event) => {
@@ -49,7 +49,7 @@ export const GET = eventHandler(async (event) => {
     return "Match not found";
   }
 
-  // Get match to find play session ID
+  // Get match to find lobby ID
   const matchRecord = await db
     .select()
     .from(Matches)
@@ -64,11 +64,11 @@ export const GET = eventHandler(async (event) => {
   // Check if user is a participant
   const participant = await db
     .select()
-    .from(PlaySessionParticipants)
+    .from(LobbyParticipants)
     .where(
       and(
-        eq(PlaySessionParticipants.playSessionId, matchRecord.playSessionId),
-        eq(PlaySessionParticipants.userId, user.id)
+        eq(LobbyParticipants.lobbyId, matchRecord.lobbyId),
+        eq(LobbyParticipants.userId, user.id)
       )
     )
     .get();
