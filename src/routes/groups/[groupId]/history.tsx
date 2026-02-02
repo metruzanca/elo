@@ -1,13 +1,5 @@
 import { createAsync, useParams, type RouteDefinition } from "@solidjs/router";
-import { getUser, getGroup } from "~/api";
-import { eq, desc, inArray } from "drizzle-orm";
-import { db } from "../../../../drizzle/db";
-import {
-  Matches,
-  MatchParticipants,
-  Users,
-  PlaySessions,
-} from "../../../../drizzle/schema";
+import { getUser, getGroup, getGroupMatchHistory } from "~/api";
 import { For, Show } from "solid-js";
 
 export const route = {
@@ -15,61 +7,9 @@ export const route = {
     const groupId = Number(params.groupId);
     getUser();
     getGroup(groupId);
+    getGroupMatchHistory(groupId);
   },
 } satisfies RouteDefinition;
-
-async function getGroupMatchHistory(groupId: number) {
-  // Get all play sessions for this group
-  const sessions = await db
-    .select({ id: PlaySessions.id })
-    .from(PlaySessions)
-    .where(eq(PlaySessions.groupId, groupId))
-    .all();
-
-  const sessionIds = sessions.map((s) => s.id);
-
-  if (sessionIds.length === 0) {
-    return [];
-  }
-
-  // Get all matches for these play sessions
-  const allMatches = await db
-    .select()
-    .from(Matches)
-    .where(inArray(Matches.playSessionId, sessionIds))
-    .orderBy(desc(Matches.startedAt))
-    .all();
-
-  // Get participants for each match
-  const matchesWithParticipants = await Promise.all(
-    allMatches.map(async (match) => {
-      const participants = await db
-        .select({
-          userId: MatchParticipants.userId,
-          team: MatchParticipants.team,
-          eloBefore: MatchParticipants.eloBefore,
-          eloAfter: MatchParticipants.eloAfter,
-          eloChange: MatchParticipants.eloChange,
-          username: Users.username,
-        })
-        .from(MatchParticipants)
-        .innerJoin(Users, eq(MatchParticipants.userId, Users.id))
-        .where(eq(MatchParticipants.matchId, match.id))
-        .all();
-
-      const team0 = participants.filter((p) => p.team === 0);
-      const team1 = participants.filter((p) => p.team === 1);
-
-      return {
-        ...match,
-        team0,
-        team1,
-      };
-    })
-  );
-
-  return matchesWithParticipants;
-}
 
 export default function MatchHistory() {
   const params = useParams();

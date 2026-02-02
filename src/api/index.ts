@@ -26,6 +26,7 @@ import {
   penalizePlayer as pP,
   getMatch as gM,
   getActiveMatch as gAM,
+  getGroupMatchHistory as gGMH,
 } from "./matches";
 
 export const getUser = query(gU, "user");
@@ -55,3 +56,4 @@ export const cancelMatch = action(cM, "cancelMatch");
 export const penalizePlayer = action(pP, "penalizePlayer");
 export const getMatch = query(gM, "match");
 export const getActiveMatch = query(gAM, "activeMatch");
+export const getGroupMatchHistory = query(gGMH, "groupMatchHistory");

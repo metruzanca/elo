@@ -1,5 +1,5 @@
 "use server";
-import { eq, and, desc, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, desc, isNotNull, isNull, inArray } from "drizzle-orm";
 import { db } from "../../drizzle/db";
 import {
   Matches,
@@ -8,6 +8,7 @@ import {
   PlaySessionParticipants,
   EloScores,
   Users,
+  GroupMembers,
 } from "../../drizzle/schema";
 import { getUser } from "./server";
 import {
@@ -576,4 +577,72 @@ export async function getActiveMatch(playSessionId: number) {
   }
 
   return getMatch(match.id);
+}
+
+export async function getGroupMatchHistory(groupId: number) {
+  const user = await getUser(); // Ensure authenticated
+
+  // Verify user is a member of the group
+  const membership = await db
+    .select()
+    .from(GroupMembers)
+    .where(
+      and(eq(GroupMembers.groupId, groupId), eq(GroupMembers.userId, user.id))
+    )
+    .get();
+
+  if (!membership) {
+    throw new Error("Not a member of this group");
+  }
+
+  // Get all play sessions for this group
+  const sessions = await db
+    .select({ id: PlaySessions.id })
+    .from(PlaySessions)
+    .where(eq(PlaySessions.groupId, groupId))
+    .all();
+
+  const sessionIds = sessions.map((s) => s.id);
+
+  if (sessionIds.length === 0) {
+    return [];
+  }
+
+  // Get all matches for these play sessions
+  const allMatches = await db
+    .select()
+    .from(Matches)
+    .where(inArray(Matches.playSessionId, sessionIds))
+    .orderBy(desc(Matches.startedAt))
+    .all();
+
+  // Get participants for each match
+  const matchesWithParticipants = await Promise.all(
+    allMatches.map(async (match) => {
+      const participants = await db
+        .select({
+          userId: MatchParticipants.userId,
+          team: MatchParticipants.team,
+          eloBefore: MatchParticipants.eloBefore,
+          eloAfter: MatchParticipants.eloAfter,
+          eloChange: MatchParticipants.eloChange,
+          username: Users.username,
+        })
+        .from(MatchParticipants)
+        .innerJoin(Users, eq(MatchParticipants.userId, Users.id))
+        .where(eq(MatchParticipants.matchId, match.id))
+        .all();
+
+      const team0 = participants.filter((p) => p.team === 0);
+      const team1 = participants.filter((p) => p.team === 1);
+
+      return {
+        ...match,
+        team0,
+        team1,
+      };
+    })
+  );
+
+  return matchesWithParticipants;
 }
