@@ -1,5 +1,5 @@
 "use server";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { db } from "../../drizzle/db";
 import {
   PlaySessions,
@@ -227,9 +227,7 @@ export async function getActivePlaySessions(groupId: number) {
   const playSessions = await db
     .select()
     .from(PlaySessions)
-    .where(
-      and(eq(PlaySessions.groupId, groupId), eq(PlaySessions.endedAt, null))
-    )
+    .where(and(eq(PlaySessions.groupId, groupId), isNull(PlaySessions.endedAt)))
     .orderBy(desc(PlaySessions.createdAt))
     .all();
 

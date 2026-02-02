@@ -1,5 +1,5 @@
 "use server";
-import { eq, and, desc, isNotNull } from "drizzle-orm";
+import { eq, and, desc, isNotNull, isNull } from "drizzle-orm";
 import { db } from "../../drizzle/db";
 import {
   Matches,
@@ -60,7 +60,7 @@ export async function startMatch(formData: FormData) {
     .where(
       and(
         eq(Matches.playSessionId, playSessionId),
-        eq(Matches.endedAt, null),
+        isNull(Matches.endedAt),
         eq(Matches.cancelled, false)
       )
     )
@@ -565,7 +565,7 @@ export async function getActiveMatch(playSessionId: number) {
     .where(
       and(
         eq(Matches.playSessionId, playSessionId),
-        eq(Matches.endedAt, null),
+        isNull(Matches.endedAt),
         eq(Matches.cancelled, false)
       )
     )

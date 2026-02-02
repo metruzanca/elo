@@ -51,6 +51,7 @@ Elo is not a way to keep track of your MMR rank, it is purely for custom scims w
   - Hosts can end a session at will, players can leave one at will.
   - If a host's SSE connection is broken and they're offline for at least 1 hour, the play session is auto-ended.
   - Within the same play session, there can only be 1 active match at a time.
+  - A play session can have many matches. When a match within a session concludes, the session itself does not conclude. The session only ends when the host ends it or when the host is offline for at least 1 hour.
   - Spectators are players in the play session who have been manually assigned as spectators by the host. They are able to view an active match from within the play session. Spectators can only see match information (teams, players, Elo scores) and when the match ends - they do not receive live updates during the match.
 
 - Match
