@@ -15,6 +15,7 @@ import {
   leavePlaySession as lPS,
   getPlaySession as gPS,
   getActivePlaySessions as gAPS,
+  getUserActivePlaySession as gUAPS,
   inviteToPlaySession as iTPS,
   setSpectator as sS,
   endPlaySession as ePS,
@@ -46,6 +47,7 @@ export const joinPlaySession = action(jPS, "joinPlaySession");
 export const leavePlaySession = action(lPS, "leavePlaySession");
 export const getPlaySession = query(gPS, "playSession");
 export const getActivePlaySessions = query(gAPS, "activePlaySessions");
+export const getUserActivePlaySession = query(gUAPS, "userActivePlaySession");
 export const inviteToPlaySession = action(iTPS, "inviteToPlaySession");
 export const setSpectator = action(sS, "setSpectator");
 export const endPlaySession = action(ePS, "endPlaySession");

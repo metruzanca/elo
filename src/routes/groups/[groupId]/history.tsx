@@ -27,14 +27,9 @@ export default function MatchHistory() {
     <main class="w-full p-4 max-w-6xl mx-auto">
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <div class="flex justify-between items-center">
-            <h2 class="card-title text-3xl text-primary">
-              Match History - {group()?.name || `Group ${groupId()}`}
-            </h2>
-            <a href={`/groups/${groupId()}`} class="btn btn-ghost btn-sm">
-              Back to Group
-            </a>
-          </div>
+          <h2 class="card-title text-3xl text-primary">
+            Match History - {group()?.name || `Group ${groupId()}`}
+          </h2>
 
           <div class="divider"></div>
 

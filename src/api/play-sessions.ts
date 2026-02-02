@@ -234,6 +234,33 @@ export async function getActivePlaySessions(groupId: number) {
   return playSessions;
 }
 
+export async function getUserActivePlaySession() {
+  const user = await getUser();
+
+  const activeSession = await db
+    .select({
+      id: PlaySessions.id,
+      groupId: PlaySessions.groupId,
+      hostId: PlaySessions.hostId,
+      createdAt: PlaySessions.createdAt,
+    })
+    .from(PlaySessionParticipants)
+    .innerJoin(
+      PlaySessions,
+      eq(PlaySessionParticipants.playSessionId, PlaySessions.id)
+    )
+    .where(
+      and(
+        eq(PlaySessionParticipants.userId, user.id),
+        isNull(PlaySessions.endedAt)
+      )
+    )
+    .orderBy(desc(PlaySessions.createdAt))
+    .get();
+
+  return activeSession || null;
+}
+
 export async function inviteToPlaySession(formData: FormData) {
   const user = await getUser();
   const playSessionId = Number(formData.get("playSessionId"));

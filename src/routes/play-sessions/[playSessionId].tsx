@@ -95,17 +95,9 @@ export default function PlaySessionPage() {
     <main class="w-full p-4 max-w-6xl mx-auto">
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <div class="flex justify-between items-center">
-            <h2 class="card-title text-3xl text-primary">
-              Play Session #{playSessionId()}
-            </h2>
-            <a
-              href={`/groups/${playSession()?.groupId}`}
-              class="btn btn-ghost btn-sm"
-            >
-              Back to Group
-            </a>
-          </div>
+          <h2 class="card-title text-3xl text-primary">
+            Play Session #{playSessionId()}
+          </h2>
 
           <Show when={isHost()}>
             <div class="badge badge-primary badge-lg">Host</div>

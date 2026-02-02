@@ -38,6 +38,16 @@ export default function GroupPage() {
   );
   const [showCreateSession, setShowCreateSession] = createSignal(false);
 
+  // Find active session where user is host
+  const hostActiveSession = () => {
+    const sessions = playSessions();
+    const currentUser = user();
+    if (!sessions || !currentUser) return null;
+    return (
+      sessions.find((session) => session.hostId === currentUser.id) || null
+    );
+  };
+
   return (
     <main class="w-full p-4 max-w-6xl mx-auto">
       <div class="card bg-base-100 shadow-xl">
@@ -46,20 +56,76 @@ export default function GroupPage() {
             <h2 class="card-title text-3xl text-primary">
               {group()?.name || `Group ${groupId()}`}
             </h2>
-            <a href="/" class="btn btn-ghost btn-sm">
-              Back to Groups
-            </a>
+            <div class="dropdown dropdown-end">
+              <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-6 h-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
+                  />
+                </svg>
+              </div>
+              <ul
+                tabindex="0"
+                class="menu dropdown-content bg-base-100 border-2 border-base-300 rounded-box z-10 w-52 p-2 shadow-lg"
+              >
+                <li>
+                  <button
+                    class="text-error"
+                    onclick={async () => {
+                      if (
+                        !confirm(
+                          "Are you sure you want to leave this group? Your match history and Elo will be deleted."
+                        )
+                      ) {
+                        return;
+                      }
+                      const formData = new FormData();
+                      formData.append("groupId", String(groupId()));
+                      const result = await leaveGroupServer(formData);
+                      if (result?.success) {
+                        window.location.href = "/";
+                      } else {
+                        alert(result?.error || "Failed to leave group");
+                      }
+                    }}
+                  >
+                    Leave Group
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div class="divider"></div>
 
           <div class="flex gap-4 flex-wrap mb-4">
-            <button
-              class="btn btn-primary"
-              onclick={() => setShowCreateSession(true)}
+            <Show
+              when={hostActiveSession()}
+              fallback={
+                <button
+                  class="btn btn-primary"
+                  onclick={() => setShowCreateSession(true)}
+                >
+                  Create Play Session
+                </button>
+              }
             >
-              Create Play Session
-            </button>
+              <a
+                href={`/play-sessions/${hostActiveSession()!.id}`}
+                class="btn btn-primary"
+              >
+                Go to Active Session
+              </a>
+            </Show>
             <a href={`/groups/${groupId()}/history`} class="btn btn-secondary">
               View Match History
             </a>
@@ -180,33 +246,6 @@ export default function GroupPage() {
               </For>
             </div>
           </Show>
-
-          <div class="divider"></div>
-
-          <div class="card-actions justify-end">
-            <button
-              class="btn btn-error"
-              onclick={async () => {
-                if (
-                  !confirm(
-                    "Are you sure you want to leave this group? Your match history and Elo will be deleted."
-                  )
-                ) {
-                  return;
-                }
-                const formData = new FormData();
-                formData.append("groupId", String(groupId()));
-                const result = await leaveGroupServer(formData);
-                if (result?.success) {
-                  window.location.href = "/";
-                } else {
-                  alert(result?.error || "Failed to leave group");
-                }
-              }}
-            >
-              Leave Group
-            </button>
-          </div>
         </div>
       </div>
     </main>
