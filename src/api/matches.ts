@@ -1,5 +1,5 @@
 "use server";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNotNull } from "drizzle-orm";
 import { db } from "../../drizzle/db";
 import {
   Matches,
@@ -105,21 +105,21 @@ export async function startMatch(formData: FormData) {
         )
         .get();
 
-      // Count games played in this session
-      const sessionMatches = await db
+      // Count games played in this session (completed matches only)
+      const completedMatches = await db
         .select({ id: Matches.id })
         .from(Matches)
         .where(
           and(
             eq(Matches.playSessionId, playSessionId),
-            eq(Matches.endedAt, null),
+            isNotNull(Matches.endedAt),
             eq(Matches.cancelled, false)
           )
         )
         .all();
 
       let gamesPlayed = 0;
-      for (const match of sessionMatches) {
+      for (const match of completedMatches) {
         const participant = await db
           .select()
           .from(MatchParticipants)
@@ -208,6 +208,17 @@ export async function startMatch(formData: FormData) {
   }
 
   await db.insert(MatchParticipants).values(matchParticipants);
+
+  // Broadcast SSE events
+  sseManager.broadcastToPlaySession(playSession.id, {
+    type: "match_started",
+    data: { matchId: match.id, matchSize, teamAssignment },
+  });
+
+  sseManager.broadcastToMatch(match.id, {
+    type: "match_started",
+    data: { matchId: match.id, matchSize, teamAssignment },
+  });
 
   return { success: true, match };
 }
@@ -379,7 +390,7 @@ export async function endMatch(formData: FormData) {
     .where(eq(Matches.id, matchId));
 
   // Broadcast SSE events
-  sseManager.broadcastToPlaySession(playSession.playSessionId, {
+  sseManager.broadcastToPlaySession(playSession.id, {
     type: "match_ended",
     data: { matchId, winningTeam },
   });

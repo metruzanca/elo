@@ -49,16 +49,16 @@ export const GET = eventHandler(async (event) => {
     return "Match not found";
   }
 
-  // Get play session
-  const playSession = await db
+  // Get match to find play session ID
+  const matchRecord = await db
     .select()
     .from(Matches)
     .where(eq(Matches.id, matchId))
     .get();
 
-  if (!playSession) {
+  if (!matchRecord) {
     setResponseStatus(event, 404);
-    return "Play session not found";
+    return "Match not found";
   }
 
   // Check if user is a participant
@@ -67,7 +67,7 @@ export const GET = eventHandler(async (event) => {
     .from(PlaySessionParticipants)
     .where(
       and(
-        eq(PlaySessionParticipants.playSessionId, playSession.playSessionId),
+        eq(PlaySessionParticipants.playSessionId, matchRecord.playSessionId),
         eq(PlaySessionParticipants.userId, user.id)
       )
     )
