@@ -8,6 +8,13 @@
       "when": 1770011738121,
       "tag": "0000_true_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1770098138121,
+      "tag": "0001_discord_oauth",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,10 @@
 import { action, query } from "@solidjs/router";
-import { getUser as gU, logout as l, loginOrRegister as lOR } from "./server";
+import {
+  getUser as gU,
+  logout as l,
+  loginOrRegister as lOR,
+  isDiscordConfigured as iDC,
+} from "./server";
 import {
   createGroup as cG,
   joinGroup as jG,
@@ -33,6 +38,7 @@ import {
 export const getUser = query(gU, "user");
 export const loginOrRegister = action(lOR, "loginOrRegister");
 export const logout = action(l, "logout");
+export const checkDiscordConfigured = query(iDC, "discordConfigured");
 
 export const createGroup = action(cG, "createGroup");
 export const joinGroup = action(jG, "joinGroup");

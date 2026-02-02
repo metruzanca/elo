@@ -5,6 +5,13 @@ import { eq } from "drizzle-orm";
 import { db } from "../../drizzle/db";
 import { Users } from "../../drizzle/schema";
 import { rateLimit, getClientIdentifier } from "../lib/rate-limit";
+import {
+  getDiscordAuthUrl,
+  exchangeCodeForToken,
+  getDiscordUser,
+  getDiscordAvatarUrl,
+  type DiscordUser,
+} from "../lib/discord";
 
 function validateUsername(username: unknown) {
   if (typeof username !== "string" || username.length < 3) {
@@ -38,7 +45,7 @@ async function register(username: string, password: string) {
   return db.insert(Users).values({ username, password }).returning().get();
 }
 
-function getSession() {
+export function getSession() {
   return useSession({
     password:
       process.env.SESSION_SECRET ?? "areallylongsecretthatyoushouldreplace",
@@ -88,8 +95,101 @@ export async function getUser() {
       .where(eq(Users.id, userId))
       .get();
     if (!user) throw redirect("/login");
-    return { id: user.id, username: user.username };
+    return {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+    };
   } catch {
     throw logout();
   }
+}
+
+// Discord OAuth functions
+export function isDiscordConfigured(): boolean {
+  return !!(
+    process.env.DISCORD_CLIENT_ID &&
+    process.env.DISCORD_CLIENT_SECRET &&
+    process.env.DISCORD_REDIRECT_URI
+  );
+}
+
+export async function startDiscordAuth(redirectTo?: string) {
+  const session = await getSession();
+  // Generate a random state for CSRF protection
+  const state = crypto.randomUUID();
+  await session.update((d) => {
+    d.oauthState = state;
+    d.oauthRedirectTo = redirectTo || "/";
+  });
+  return getDiscordAuthUrl(state);
+}
+
+export async function handleDiscordCallback(code: string, state: string) {
+  const session = await getSession();
+  const savedState = session.data.oauthState;
+  const redirectTo = session.data.oauthRedirectTo || "/";
+
+  // Clear OAuth state
+  await session.update((d) => {
+    d.oauthState = undefined;
+    d.oauthRedirectTo = undefined;
+  });
+
+  // Validate state
+  if (!savedState || savedState !== state) {
+    throw new Error("Invalid OAuth state");
+  }
+
+  // Exchange code for token
+  const tokenResponse = await exchangeCodeForToken(code);
+  const discordUser = await getDiscordUser(tokenResponse.access_token);
+
+  // Find or create user
+  const user = await findOrCreateDiscordUser(discordUser);
+
+  // Set session
+  await session.update((d) => {
+    d.userId = user.id;
+  });
+
+  return redirectTo;
+}
+
+async function findOrCreateDiscordUser(discordUser: DiscordUser) {
+  // Check if user exists with this Discord ID
+  const existingUser = await db
+    .select()
+    .from(Users)
+    .where(eq(Users.discordId, discordUser.id))
+    .get();
+
+  const displayName = discordUser.global_name || discordUser.username;
+  const avatarUrl = getDiscordAvatarUrl(discordUser);
+
+  if (existingUser) {
+    // Update display name and avatar if changed
+    await db
+      .update(Users)
+      .set({ displayName, avatarUrl })
+      .where(eq(Users.id, existingUser.id));
+    return { ...existingUser, displayName, avatarUrl };
+  }
+
+  // Create new user
+  const username = `discord_${discordUser.id}`;
+  const newUser = await db
+    .insert(Users)
+    .values({
+      username,
+      password: "", // No password for Discord users
+      discordId: discordUser.id,
+      displayName,
+      avatarUrl,
+    })
+    .returning()
+    .get();
+
+  return newUser;
 }
