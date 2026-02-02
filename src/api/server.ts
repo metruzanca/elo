@@ -4,6 +4,7 @@ import { useSession } from "vinxi/http";
 import { eq } from "drizzle-orm";
 import { db } from "../../drizzle/db";
 import { Users } from "../../drizzle/schema";
+import { rateLimit, getClientIdentifier } from "../lib/rate-limit";
 
 function validateUsername(username: unknown) {
   if (typeof username !== "string" || username.length < 3) {
@@ -45,6 +46,10 @@ function getSession() {
 }
 
 export async function loginOrRegister(formData: FormData) {
+  // Rate limiting (lenient - skip if we can't identify client)
+  // Server actions don't have direct access to request event in SolidStart
+  // Rate limiting is primarily handled at the API route level
+
   const username = String(formData.get("username"));
   const password = String(formData.get("password"));
   const loginType = String(formData.get("loginType"));

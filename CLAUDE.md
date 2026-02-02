@@ -6,3 +6,8 @@
 ## UI & Styling
 
 - Use tailwind, heroicons for icons and solid-motionone for animations
+
+## Imports
+
+- `~/` alias resolves to src/
+- `@/` alias resolves to drizzle/ (use for db access)

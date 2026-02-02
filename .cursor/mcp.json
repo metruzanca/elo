@@ -2,6 +2,15 @@
   "mcpServers": {
     "daisyui-github": {
       "url": "https://gitmcp.io/saadeghi/daisyui"
+    },
+    "solid Docs": {
+      "url": "https://gitmcp.io/solidjs/solid"
+    },
+    "solid-router Docs": {
+      "url": "https://gitmcp.io/solidjs/solid-router"
+    },
+    "solid-start Docs": {
+      "url": "https://gitmcp.io/solidjs/solid-start"
     }
   }
 }
