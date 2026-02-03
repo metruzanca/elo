@@ -16,10 +16,28 @@ export default function Login(props: RouteSectionProps) {
   const [searchParams] = useSearchParams();
   const [showDevLogin, setShowDevLogin] = createSignal(false);
 
-  const redirectTo = () => searchParams.redirectTo ?? "/";
-  const discordAuthUrl = () =>
-    //@ts-ignore
-    `/api/auth/discord?redirectTo=${encodeURIComponent(redirectTo())}`;
+  const redirectTo = () => (searchParams.redirectTo as string) ?? "/";
+  const discordAuthUrl = () => {
+    const url = `/api/auth/discord?redirectTo=${encodeURIComponent(
+      redirectTo()
+    )}`;
+    // #region agent log
+    fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "login.tsx:20",
+        message: "discordAuthUrl computed",
+        data: { url, redirectTo: redirectTo() },
+        timestamp: Date.now(),
+        sessionId: "debug-session",
+        runId: "run1",
+        hypothesisId: "E",
+      }),
+    }).catch(() => {});
+    // #endregion
+    return url;
+  };
 
   const errorMessage = () => {
     const error = searchParams.error;
@@ -52,7 +70,57 @@ export default function Login(props: RouteSectionProps) {
               </div>
             }
           >
-            <a href={discordAuthUrl()} class="btn btn-primary w-full gap-2">
+            {/* #region agent log */}
+            {(() => {
+              const configured = discordConfigured();
+              fetch(
+                "http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    location: "login.tsx:46",
+                    message: "Discord button render check",
+                    data: { configured, url: discordAuthUrl() },
+                    timestamp: Date.now(),
+                    sessionId: "debug-session",
+                    runId: "run1",
+                    hypothesisId: "E",
+                  }),
+                }
+              ).catch(() => {});
+              return null;
+            })()}
+            {/* #endregion */}
+            <a
+              href={discordAuthUrl()}
+              class="btn btn-primary w-full gap-2"
+              onClick={(e) => {
+                // #region agent log
+                fetch(
+                  "http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      location: "login.tsx:54",
+                      message: "Discord button clicked",
+                      data: {
+                        href: discordAuthUrl(),
+                        defaultPrevented: e.defaultPrevented,
+                      },
+                      timestamp: Date.now(),
+                      sessionId: "debug-session",
+                      runId: "run1",
+                      hypothesisId: "E",
+                    }),
+                  }
+                ).catch(() => {});
+                // #endregion
+                e.preventDefault();
+                window.location.href = discordAuthUrl();
+              }}
+            >
               <svg
                 class="w-5 h-5"
                 viewBox="0 0 24 24"

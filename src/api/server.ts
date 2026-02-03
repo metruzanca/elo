@@ -108,28 +108,195 @@ export async function getUser() {
 
 // Discord OAuth functions
 export async function isDiscordConfigured(): Promise<boolean> {
-  return !!(
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:110",
+      message: "isDiscordConfigured entry",
+      data: {
+        clientId: !!process.env.DISCORD_CLIENT_ID,
+        clientSecret: !!process.env.DISCORD_CLIENT_SECRET,
+        redirectUri: !!process.env.DISCORD_REDIRECT_URI,
+        clientIdVal:
+          process.env.DISCORD_CLIENT_ID?.substring(0, 10) || "undefined",
+        redirectUriVal: process.env.DISCORD_REDIRECT_URI || "undefined",
+      },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "A",
+    }),
+  }).catch(() => {});
+  // #endregion
+  const result = !!(
     process.env.DISCORD_CLIENT_ID &&
     process.env.DISCORD_CLIENT_SECRET &&
     process.env.DISCORD_REDIRECT_URI
   );
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:116",
+      message: "isDiscordConfigured exit",
+      data: { result },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "A",
+    }),
+  }).catch(() => {});
+  // #endregion
+  return result;
 }
 
 export async function startDiscordAuth(redirectTo?: string) {
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:118",
+      message: "startDiscordAuth entry",
+      data: { redirectTo: redirectTo || "undefined" },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
   const session = await getSession();
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:120",
+      message: "startDiscordAuth session retrieved",
+      data: { sessionExists: !!session },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
   // Generate a random state for CSRF protection
   const state = crypto.randomUUID();
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:123",
+      message: "startDiscordAuth state generated",
+      data: { state },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
   await session.update((d) => {
     d.oauthState = state;
     d.oauthRedirectTo = redirectTo || "/";
   });
-  return getDiscordAuthUrl(state);
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:128",
+      message: "startDiscordAuth session updated",
+      data: {
+        savedState: session.data.oauthState,
+        savedRedirectTo: session.data.oauthRedirectTo,
+      },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
+  const authUrl = getDiscordAuthUrl(state);
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:130",
+      message: "startDiscordAuth exit",
+      data: { authUrl },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
+  return authUrl;
 }
 
 export async function handleDiscordCallback(code: string, state: string) {
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:129",
+      message: "handleDiscordCallback entry",
+      data: { code: code?.substring(0, 20) || "undefined", state },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
   const session = await getSession();
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:131",
+      message: "handleDiscordCallback session retrieved",
+      data: { sessionExists: !!session },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
   const savedState = session.data.oauthState;
   const redirectTo = session.data.oauthRedirectTo || "/";
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:133",
+      message: "handleDiscordCallback state check",
+      data: {
+        savedState,
+        receivedState: state,
+        statesMatch: savedState === state,
+        redirectTo,
+      },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
 
   // Clear OAuth state
   await session.update((d) => {
@@ -139,31 +306,185 @@ export async function handleDiscordCallback(code: string, state: string) {
 
   // Validate state
   if (!savedState || savedState !== state) {
+    // #region agent log
+    fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "server.ts:142",
+        message: "handleDiscordCallback state validation failed",
+        data: { savedState, receivedState: state },
+        timestamp: Date.now(),
+        sessionId: "debug-session",
+        runId: "run1",
+        hypothesisId: "B",
+      }),
+    }).catch(() => {});
+    // #endregion
     throw new Error("Invalid OAuth state");
   }
 
   // Exchange code for token
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:146",
+      message: "handleDiscordCallback before token exchange",
+      data: { code: code?.substring(0, 20) || "undefined" },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "C",
+    }),
+  }).catch(() => {});
+  // #endregion
   const tokenResponse = await exchangeCodeForToken(code);
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:147",
+      message: "handleDiscordCallback token exchange success",
+      data: {
+        hasToken: !!tokenResponse.access_token,
+        tokenType: tokenResponse.token_type,
+      },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "C",
+    }),
+  }).catch(() => {});
+  // #endregion
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:148",
+      message: "handleDiscordCallback before user fetch",
+      data: {},
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "C",
+    }),
+  }).catch(() => {});
+  // #endregion
   const discordUser = await getDiscordUser(tokenResponse.access_token);
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:149",
+      message: "handleDiscordCallback user fetch success",
+      data: { userId: discordUser.id, username: discordUser.username },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "C",
+    }),
+  }).catch(() => {});
+  // #endregion
 
   // Find or create user
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:152",
+      message: "handleDiscordCallback before findOrCreateUser",
+      data: { discordUserId: discordUser.id },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "D",
+    }),
+  }).catch(() => {});
+  // #endregion
   const user = await findOrCreateDiscordUser(discordUser);
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:153",
+      message: "handleDiscordCallback findOrCreateUser success",
+      data: { userId: user.id, username: user.username },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "D",
+    }),
+  }).catch(() => {});
+  // #endregion
 
   // Set session
   await session.update((d) => {
     d.userId = user.id;
   });
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:158",
+      message: "handleDiscordCallback exit",
+      data: { redirectTo, userId: user.id },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B",
+    }),
+  }).catch(() => {});
+  // #endregion
 
   return redirectTo;
 }
 
 async function findOrCreateDiscordUser(discordUser: DiscordUser) {
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:160",
+      message: "findOrCreateDiscordUser entry",
+      data: { discordUserId: discordUser.id, username: discordUser.username },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "D",
+    }),
+  }).catch(() => {});
+  // #endregion
   // Check if user exists with this Discord ID
   const existingUser = await db
     .select()
     .from(Users)
     .where(eq(Users.discordId, discordUser.id))
     .get();
+
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:167",
+      message: "findOrCreateDiscordUser query result",
+      data: { existingUser: !!existingUser, existingUserId: existingUser?.id },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "D",
+    }),
+  }).catch(() => {});
+  // #endregion
 
   const displayName = discordUser.global_name || discordUser.username;
   const avatarUrl = getDiscordAvatarUrl(discordUser);
@@ -174,11 +495,41 @@ async function findOrCreateDiscordUser(discordUser: DiscordUser) {
       .update(Users)
       .set({ displayName, avatarUrl })
       .where(eq(Users.id, existingUser.id));
+    // #region agent log
+    fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "server.ts:177",
+        message: "findOrCreateDiscordUser updated existing",
+        data: { userId: existingUser.id },
+        timestamp: Date.now(),
+        sessionId: "debug-session",
+        runId: "run1",
+        hypothesisId: "D",
+      }),
+    }).catch(() => {});
+    // #endregion
     return { ...existingUser, displayName, avatarUrl };
   }
 
   // Create new user
   const username = `discord_${discordUser.id}`;
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:181",
+      message: "findOrCreateDiscordUser creating new",
+      data: { username },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "D",
+    }),
+  }).catch(() => {});
+  // #endregion
   const newUser = await db
     .insert(Users)
     .values({
@@ -190,6 +541,22 @@ async function findOrCreateDiscordUser(discordUser: DiscordUser) {
     })
     .returning()
     .get();
+
+  // #region agent log
+  fetch("http://127.0.0.1:7246/ingest/571f972d-0875-4449-89e9-6bb90541c8fc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "server.ts:194",
+      message: "findOrCreateDiscordUser created new",
+      data: { userId: newUser.id, username: newUser.username },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "D",
+    }),
+  }).catch(() => {});
+  // #endregion
 
   return newUser;
 }
