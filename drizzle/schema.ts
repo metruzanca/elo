@@ -5,11 +5,20 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-export const Users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  username: text("username").notNull().default(""),
-  password: text("password").notNull().default(""),
-});
+export const Users = sqliteTable(
+  "users",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    username: text("username").notNull().default(""),
+    password: text("password").notNull().default(""),
+    discordId: text("discord_id"),
+    displayName: text("display_name"),
+    avatarUrl: text("avatar_url"),
+  },
+  (table) => ({
+    discordIdIdx: uniqueIndex("users_discord_id_idx").on(table.discordId),
+  })
+);
 
 export const Groups = sqliteTable(
   "groups",
