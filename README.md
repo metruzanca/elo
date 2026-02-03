@@ -89,3 +89,13 @@ Elo is not a way to keep track of your MMR rank, it is purely for custom scims w
   - There should be a leaderboard within each group showing stats for each player: Elo, games won, win %, last game played, total games played, games lost, highest win streak and current win streak.
   - When a host starts a match, the Elo app randomly selects non-spectator players from the lobby, optimizes the game and picks the teams based on selected player's elos (using average Elo for balance, choosing the closest balance if perfect balance isn't possible, ideally ensuring similar gametime for all players) and the host will be able to click Start when the match officially begins.
   - During match setup, players' current streak status is visible alongside their Elo scores.
+
+---
+
+## Deployment
+
+### Setup Discord Oauth
+
+1. Create a Discord application at https://discord.com/developers/applications
+2. Set the OAuth2 redirect URL to your callback URL
+3. Add the environment variables to your deployment

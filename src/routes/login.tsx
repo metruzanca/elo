@@ -2,26 +2,32 @@ import {
   useSubmission,
   useSearchParams,
   type RouteSectionProps,
+  createAsync,
 } from "@solidjs/router";
 import { Show, createSignal } from "solid-js";
 import { loginOrRegister, checkDiscordConfigured } from "~/api";
 
 export default function Login(props: RouteSectionProps) {
+  const discordConfigured = createAsync(async () => checkDiscordConfigured(), {
+    deferStream: true,
+  });
+
   const loggingIn = useSubmission(loginOrRegister);
   const [searchParams] = useSearchParams();
   const [showDevLogin, setShowDevLogin] = createSignal(false);
 
-  const discordConfigured = checkDiscordConfigured();
-
-  const redirectTo = () => props.params.redirectTo ?? "/";
+  const redirectTo = () => searchParams.redirectTo ?? "/";
   const discordAuthUrl = () =>
+    //@ts-ignore
     `/api/auth/discord?redirectTo=${encodeURIComponent(redirectTo())}`;
 
   const errorMessage = () => {
     const error = searchParams.error;
     if (error === "discord_denied") return "Discord login was cancelled";
-    if (error === "discord_failed") return "Discord login failed. Please try again.";
-    if (error === "invalid_request") return "Invalid request. Please try again.";
+    if (error === "discord_failed")
+      return "Discord login failed. Please try again.";
+    if (error === "invalid_request")
+      return "Invalid request. Please try again.";
     return null;
   };
 
@@ -29,9 +35,7 @@ export default function Login(props: RouteSectionProps) {
     <main class="w-full p-4 flex items-center justify-center min-h-screen">
       <div class="card bg-base-100 shadow-xl w-full max-w-md">
         <div class="card-body">
-          <h1 class="card-title text-2xl mb-4 justify-center">
-            Login
-          </h1>
+          <h1 class="card-title text-2xl mb-4 justify-center">Login</h1>
 
           <Show when={errorMessage()}>
             <div class="alert alert-error mb-4" role="alert">

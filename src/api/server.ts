@@ -107,7 +107,7 @@ export async function getUser() {
 }
 
 // Discord OAuth functions
-export function isDiscordConfigured(): boolean {
+export async function isDiscordConfigured(): Promise<boolean> {
   return !!(
     process.env.DISCORD_CLIENT_ID &&
     process.env.DISCORD_CLIENT_SECRET &&
