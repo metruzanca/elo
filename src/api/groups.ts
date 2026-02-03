@@ -9,6 +9,7 @@ import {
   MatchParticipants,
   Lobbies,
   Users,
+  LobbyParticipants,
 } from "../../drizzle/schema";
 import { getUser } from "./server";
 import { randomBytes } from "crypto";
